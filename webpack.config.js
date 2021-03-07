@@ -4,7 +4,7 @@ const path = require('path');
 module.exports = {
     entry: {
         './client/components/basic/index': './client/components/basic/index.js',
-        './client/components/2/index': './client/components/2/index.js'
+        './client/components/loadmore/index': './client/components/loadmore/index.js'
     },
     output: {
         filename: '[name].js',  // output bundle file name

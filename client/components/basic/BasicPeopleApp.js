@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { gql, useMutation, useQuery } from "@apollo/client";
-import BasicPeopleList from './BasicPeopleList';
 import Button from 'react-bootstrap/Button';
 import utils from '../../utils';
 import { ALL_PEOPLE } from './Queries';
@@ -69,7 +68,7 @@ export default (props) => {
             <div className="my-3">
                 <Button variant="success" onClick={createRandomer}>Create</Button>
             </div>
-            <BasicPeopleList/>
+            {props.list}
         </div>
     );
 };

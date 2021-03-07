@@ -29,3 +29,33 @@ export const ALL_PEOPLE = gql`
     }
   }
 `;
+
+export const LOAD_PEOPLE  = gql`
+  query LoadPeople ($first: Int, $after: String) {
+    viewer {
+      id
+      people (first: $first, after: $after) {
+        pageInfo {
+          hasPreviousPage
+          hasNextPage
+          startCursor
+          endCursor
+        }
+        edges {
+          node {
+            firstName
+            lastName
+            age
+            sex
+            alive
+            uniqueIdentifier
+            pk
+            id
+            randomNumber
+          }
+          cursor
+        }
+      }
+    }
+  }
+`;
