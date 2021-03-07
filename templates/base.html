@@ -1,0 +1,20 @@
+{% load static %}
+<!doctype html>
+<html class="h-100" lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+  </head>
+  <body class="h-100">
+    {% block content %}
+    <div class="h-100 container">
+        {% block header %}
+        {% endblock header %}
+        <div id="root" class="pt-5"></div>
+    </div>
+    {% endblock content %}
+    {% block js %}
+    {% endblock js %}
+  </body>
+</html>

@@ -1,0 +1,29 @@
+const path = require('path');
+
+// multiple entry and output source - https://stackoverflow.com/questions/35903246/how-to-create-multiple-output-paths-in-webpack-config
+module.exports = {
+    entry: {
+        './client/components/basic/index': './client/components/basic/index.js',
+        './client/components/2/index': './client/components/2/index.js'
+    },
+    output: {
+        filename: '[name].js',  // output bundle file name
+        path: path.resolve(__dirname, './static'),  // path to our Django static directory
+    },
+    module: {
+        rules: [
+            {
+                test: /\.(js|jsx)$/,
+                exclude: /node_modules/,
+                loader: "babel-loader",
+                options: {
+                    presets: ["@babel/preset-env", "@babel/preset-react"],
+                }
+            },
+            {
+                test: /\.css$/,
+                use: ['style-loader', 'css-loader']
+            }
+        ]
+    }
+};

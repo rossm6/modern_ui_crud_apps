@@ -1,0 +1,33 @@
+{
+  "name": "modern_ui_crud_apps",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "webpack --mode development",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@apollo/client": "^3.3.11",
+    "bootstrap": "^4.6.0",
+    "formik": "^2.2.6",
+    "graphql": "^15.5.0",
+    "react": "^17.0.1",
+    "react-bootstrap": "^1.5.1",
+    "react-dom": "^17.0.1",
+    "yup": "^0.32.9"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.13.8",
+    "@babel/preset-env": "^7.13.9",
+    "@babel/preset-react": "^7.12.13",
+    "babel-loader": "^8.2.2",
+    "css-loader": "^5.1.1",
+    "style-loader": "^2.0.0",
+    "webpack": "^5.24.3",
+    "webpack-cli": "^4.5.0"
+  }
+}
