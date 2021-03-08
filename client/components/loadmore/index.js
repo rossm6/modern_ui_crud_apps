@@ -6,6 +6,10 @@ import LoadMorePeopleApp from './LoadMorePeopleApp';
 // Importing the Bootstrap CSS
 import 'bootstrap/dist/css/bootstrap.min.css';
 
+// On the server side we use the default cursor pagination from graphene django.
+// But this is no good.  We should realy swap to the proper pagination
+// which is in graphene_extras.pagination.
+
 function default_people() {
     return {
         pageInfo: {
