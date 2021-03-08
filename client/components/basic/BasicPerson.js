@@ -43,7 +43,7 @@ export default (props) => {
                                 ...current.viewer.people.pageInfo
                             },
                             edges: current.viewer.people.edges.filter(function(e, i){
-                                return e.id !== o.data.deletedPersonId
+                                return e.node.id !== o.data.deletePerson.deletedPersonId;
                             })
                         }
                     }

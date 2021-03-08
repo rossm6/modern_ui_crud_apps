@@ -1,8 +1,7 @@
 import React from 'react';
 import ReactDOM from "react-dom";
 import { ApolloProvider, ApolloClient, InMemoryCache } from "@apollo/client";
-import BasicPeopleApp from '../basic/BasicPeopleApp';
-import LoadMorePeopleList from './LoadMorePeopleList';
+import LoadMorePeopleApp from './LoadMorePeopleApp';
 
 // Importing the Bootstrap CSS
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -23,6 +22,10 @@ const loadMorePagination = () => {
     return {
         keyArgs: false,
         merge(existing = default_people(), incoming, o) {
+            console.log("merge");
+            console.log(existing);
+            console.log(incoming);
+            console.log("end merge");
             if (!incoming) {
                 return existing;
             }
@@ -56,7 +59,7 @@ const client = new ApolloClient({
 
 ReactDOM.render(
     <ApolloProvider client={client}>
-        <BasicPeopleApp list={<LoadMorePeopleList />} />
+        <LoadMorePeopleApp/>
     </ApolloProvider>,
     document.getElementById('root')
 );

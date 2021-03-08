@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { gql, useMutation, useQuery } from "@apollo/client";
-import BasicPerson from '../basic/BasicPerson';
 import { LOAD_PEOPLE } from '../basic/Queries';
 import Button from 'react-bootstrap/Button';
+import LoadMorePerson from './LoadMorePerson';
 
 // TODO
 // this fragment needs defining in the server side schema first
@@ -59,7 +59,10 @@ export default (props) => {
     const [updatePerson] = useMutation(UPDATE_PERSON);
 
     const loadMore = () => {
+        console.log("load more");
+        console.log(data?.viewer);
         if(data?.viewer.people.pageInfo.hasNextPage){
+            console.log("load more yes");
             const endCursor = data.viewer.people.pageInfo.endCursor;
             fetchMore({
                 variables: {
@@ -89,7 +92,7 @@ export default (props) => {
                     {
                         data?.viewer.people.edges.map((edge, key) => (
                             <tr key={key}>
-                                <BasicPerson person={edge.node} updater={updatePerson} />
+                                <LoadMorePerson person={edge.node} updater={updatePerson} />
                             </tr>
                         ))
                     }
