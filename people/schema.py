@@ -98,15 +98,18 @@ def create_cursor(index):
 
 
 def page_to_index(page, page_size):
-    return (page - 1) * page_size - 1
-
+    return page * page_size - 1
 
 """
 Need to manually test this new class out
 """
 
-
 class PaginationConnection(graphene.relay.Connection):
+    """
+    For each pagination button we want the cursor which is the last index of
+    the page before.
+    """
+
     class Meta:
         abstract = True
     pages = graphene.Field(PageCursors, pageSize=graphene.Int())
@@ -122,8 +125,7 @@ class PaginationConnection(graphene.relay.Connection):
 
     def get_page_cursors(self, first_page, last_page, previous_page, around_pages, current_page, page_size):
         if first_page:
-            first_page = self.get_page_cursor(
-                first_page, first_page == current_page, page_size)
+            first_page = PageCursor(cursor="", page_number=first_page, is_current == first_page)
         if last_page:
             last_page = self.get_page_cursor(
                 last_page, last_page == current_page, page_size)
