@@ -8,13 +8,13 @@ import BasicPeopleList from './BasicPeopleList';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const client = new ApolloClient({
-    uri: "http://localhost:8000/graphql",
-    cache: new InMemoryCache()
-  });
+  uri: "http://localhost:8000/graphql",
+  cache: new InMemoryCache()
+});
 
 ReactDOM.render(
-    <ApolloProvider client={client}>
-      <BasicPeopleApp list={<BasicPeopleList/>}/>
-    </ApolloProvider>,
-    document.getElementById('root')
-  );
+  <ApolloProvider client={client}>
+    <BasicPeopleApp list={<BasicPeopleList />} />
+  </ApolloProvider>,
+  document.getElementById('root')
+);

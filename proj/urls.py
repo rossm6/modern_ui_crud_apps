@@ -24,4 +24,5 @@ urlpatterns = [
     path('', TemplateView.as_view(template_name='base.html')),
     path("graphql", csrf_exempt(GraphQLView.as_view(graphiql=True))),
     path("people/", include('people.urls')),
+    path("squares/", include('squares.urls'))
 ]

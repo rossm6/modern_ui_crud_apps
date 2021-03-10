@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'graphene_django',
 
     'people',
+    'squares'
 ]
 
 MIDDLEWARE = [
