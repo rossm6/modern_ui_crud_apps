@@ -33,10 +33,11 @@ SEXES_ENUM = graphene.Enum(
     'Sexes',
     [(value, value) for value, _ in Person.sexes]
 )
-# the graphql implementation in capitalizes the
+
+# The graphql implementation in capitalizes the
 # django choice values.  No option but to either override
 # like this or declare the model attribute a string.
-# i prefer this even though more code.
+# I prefer this even though more code.
 
 
 class PeopleConnection(graphene.relay.Connection):
@@ -49,7 +50,7 @@ class PersonNode(DjangoObjectType):
     class Meta:
         model = Person
         fields = ('first_name', 'last_name', 'age',
-                  'sex', 'alive', 'unique_identifier', 'random_number')
+                  'sex', 'alive', 'unique_identifier', 'random_number',)
         filterset_class = PersonFilter
         interfaces = (graphene.relay.Node,)
         connection_class = PeopleConnection
@@ -92,13 +93,13 @@ def encode_cursor(index):
 # See the graphql_relay package - https://github.com/graphql-python/graphql-relay-py/blob/master/src/graphql_relay/connection/arrayconnection.py
 PREFIX = 'arrayconnection:'
 
-
 def create_cursor(index):
     return encode_cursor(PREFIX + str(index))
 
-
 def page_to_index(page, page_size):
-    return page * page_size - 1
+    if page == 1:
+        return 0
+    return ((page - 1) * page_size) - 1
 
 """
 Need to manually test this new class out
@@ -107,9 +108,11 @@ Need to manually test this new class out
 class PaginationConnection(graphene.relay.Connection):
     """
     For each pagination button we want the cursor which is the last index of
-    the page before.
-    """
+    the page before.  Then the client just requests -
 
+        first: $pageSize, after: "<cursor of last item on previous page>"
+
+    """
     class Meta:
         abstract = True
     pages = graphene.Field(PageCursors, pageSize=graphene.Int())
@@ -119,13 +122,17 @@ class PaginationConnection(graphene.relay.Connection):
         return index // page_size + 1
 
     def get_page_cursor(self, page, is_current, page_size):
-        i = page_to_index(page, page_size)
-        c = create_cursor(i)
+        if i := page_to_index(page, page_size):
+            c = create_cursor(i) # cursor needs to be the index of the last item on the previous page
+        else:
+            c = "" # first page needs to be empty string i.e. get first X items from beginning / ""
         return PageCursor(cursor=c, page_number=page, is_current=is_current)
 
     def get_page_cursors(self, first_page, last_page, previous_page, around_pages, current_page, page_size):
         if first_page:
-            first_page = PageCursor(cursor="", page_number=first_page, is_current == first_page)
+            first_page = PageCursor(
+                cursor="", page_number=first_page, is_current=current_page == first_page)
+            print(first_page.__dict__)
         if last_page:
             last_page = self.get_page_cursor(
                 last_page, last_page == current_page, page_size)
@@ -144,10 +151,10 @@ class PaginationConnection(graphene.relay.Connection):
         if not current_page_end_cursor:
             return
         current_page_start_index = decode_cursor(current_page_start_cursor)
-        current_page_end_index = decode_cursor(current_page_end_cursor)
         current_page = self.get_page_number(
             current_page_start_index, page_size)
         first_page = 1
+        # queryset should be the whole filtered or unfiltered set (before slice is taken)
         last_page = self.get_page_number(len(queryset) - 1, page_size)
         previous_page = current_page - 1 if current_page > 1 else None
         around_pages = []
@@ -163,8 +170,47 @@ class PaginationConnection(graphene.relay.Connection):
         # along with the other parameters for peoplePages
         page_info = self.page_info
         queryset = self.iterable
-        page_size = kwargs.get('page_size', 10)
+        page_size = kwargs.get('pageSize', 10)
         return self.get_pages(page_size, page_info.start_cursor, page_info.end_cursor, queryset)
+
+
+"""
+query A {
+ viewer {
+  peoplePages(first:5, after:"") {
+    edges {
+      node {
+        firstName
+        randomNumber
+      }
+      cursor
+    }
+    pages (pageSize: 5) {
+      first {
+        cursor
+        pageNumber
+        isCurrent
+      }
+      last {
+        cursor
+        pageNumber
+        isCurrent
+      }
+      around {
+        cursor
+        pageNumber
+        isCurrent
+      }
+      previous {
+        cursor
+        pageNumber
+        isCurrent
+      }
+    }
+  }
+} 
+}
+"""
 
 
 class PaginatePeopleConnection(PaginationConnection):

@@ -1,7 +1,5 @@
-import React, { useState } from 'react';
-import { gql, useMutation, useQuery } from "@apollo/client";
-import LoadMorePeopleList from './LoadMorePeopleList';
-import { ALL_PEOPLE } from '../basic/Queries';
+import React from 'react';
+import PaginationPeopleList from './PaginationPeopleList';
 
 export default (props) => {
 

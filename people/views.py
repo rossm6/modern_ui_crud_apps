@@ -6,3 +6,6 @@ class BasicPersonView(TemplateView):
 
 class LoadMore(TemplateView):
     template_name = "load_more.html"
+
+class Pagination(TemplateView):
+    template_name = "pagination.html"
