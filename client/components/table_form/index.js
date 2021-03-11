@@ -19,30 +19,41 @@ const Table = () => {
     ];
 
     return (
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Square</th>
-                    <th>Listing</th>
-                    <th>Start</th>
-                    <th>Duration</th>
-                    <th>End</th>
-                    <th>Price</th>
-                </tr>
-            </thead>
-            <tbody>
-                {data.map((row) => (
+        <>
+            <div className="d-sm-none text-right">
+                <h1 className="h4"><i class="bi bi-filter-circle"></i></h1>
+            </div>
+            <table className="table">
+                <thead>
                     <tr>
-                        <td data-label="square">{row.square}</td>
-                        <td data-label="listing">{row.listing}</td>
-                        <td data-label="start">{row.start}</td>
-                        <td data-label="duration">{row.duration}</td>
-                        <td data-label="end">{row.end}</td>
-                        <td data-label="price">{row.price}</td>
+                        <th>
+                            <span>Square</span>
+                            <span>
+                                <i class="bi bi-caret-down-fill"></i>
+                                <i class="d-none bi bi-caret-up-fill"></i>
+                            </span>
+                        </th>
+                        <th>Listing</th>
+                        <th>Start</th>
+                        <th>Duration</th>
+                        <th>End</th>
+                        <th>Price</th>
                     </tr>
-                ))}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    {data.map((row, i) => (
+                        <tr key={i}>
+                            <td data-label="square">{row.square}</td>
+                            <td data-label="listing">{row.listing}</td>
+                            <td data-label="start">{row.start}</td>
+                            <td data-label="duration">{row.duration}</td>
+                            <td data-label="end">{row.end}</td>
+                            <td data-label="price">{row.price}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </>
     )
 };
 
