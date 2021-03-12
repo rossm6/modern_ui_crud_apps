@@ -109,6 +109,16 @@
                 {
                   "defaultValue": null,
                   "description": null,
+                  "name": "orderBy",
+                  "type": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                {
+                  "defaultValue": null,
+                  "description": null,
                   "name": "before",
                   "type": {
                     "kind": "SCALAR",

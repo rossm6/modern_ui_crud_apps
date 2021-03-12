@@ -5,10 +5,10 @@ import { gql, useQuery } from "@apollo/client";
 // page size is fixed at 5 to begin with
 
 export const LOAD_PRODUCTS = gql`
-  query LoadProducts ($first: Int, $after: String, $pageSize: Int) {
+  query LoadProducts ($first: Int, $after: String, $pageSize: Int, $orderBy: String) {
     viewer {
       id
-      products (first: $first, after: $after) {
+      products (first: $first, after: $after, orderBy: $orderBy) {
         edges {
           node {
             square {
@@ -88,10 +88,10 @@ function Table({
     );
 
     useEffect(() => {
-        fetchData({ pageIndex, pageSize, sortBy });
+        if (!loading) {
+            fetchData({ pageIndex, pageSize, sortBy });
+        }
     }, [sortBy, fetchData, pageIndex, pageSize]);
-
-    console.log(data);
 
     return (
         <>
@@ -136,8 +136,7 @@ function Table({
                             <td colSpan="10000">Loading...</td>
                         ) : (
                             <td colSpan="10000">
-                                Showing {page.length} of ~{controlledPageCount * pageSize}{" "}
-                  results
+                                Showing {page.length} of ~{controlledPageCount * pageSize}{" "} results
                             </td>
                         )}
                     </tr>
@@ -192,17 +191,20 @@ function Table({
 }
 
 function App() {
-    const sortIdRef = React.useRef(0);
-    const {
-        loading,
+    const { loading,
         data,
-        fetchMore
-    } = useQuery(LOAD_PRODUCTS, {
-        variables: {
-            first: 10,
-            after: ''
-        }
-    });
+        fetchMore, }
+        = useQuery(LOAD_PRODUCTS, {
+            variables: {
+                first: 10,
+                after: ''
+            },
+            fetchPolicy: 'network-only'
+            // fetchPolicy: 'no-cache' causes the original query
+            // to fire after every new query
+            // as well as being stupid this ruins the table because the original result only shows
+            // Possible bug to replicate
+        });
 
     const columns = React.useMemo(
         () => [
@@ -233,6 +235,14 @@ function App() {
         ]
     );
 
+    const orm_ordering = {
+        'col1': 'square_id',
+        'col2': 'start',
+        'col3': 'duration',
+        'col4': 'end',
+        'col5': 'listing',
+        'col6': 'price'
+    };
 
     const encodeCursor = (offset) => {
         // server implementation is -
@@ -243,9 +253,17 @@ function App() {
         // this is the JS equivalent
         const prefix = 'arrayconnection:'; // this is the prefix used by the graphene relay package on the server
         let cursor = prefix + offset;
-        return decodeURI(btoa(encodeURI(cursor))); 
+        return decodeURI(btoa(encodeURI(cursor)));
     };
 
+    const getOrderingQuery = (sortBy) => {
+        const ordering = [];
+        sortBy.forEach((s, i) => {
+            const dir = s.desc ? '-' : '';
+            ordering.push(`${dir}${orm_ordering[s.id]}`);
+        });
+        return ordering;
+    };
 
     const getCursorFromOffset = (offset) => {
         if (offset == 0) return "";
@@ -256,41 +274,40 @@ function App() {
         // This will get called when the table needs new data
         // You could fetch your data from literally anywhere,
         // even a server. But for this example, we'll just fake it.
-        console.log("in fetch data", pageSize, pageIndex, sortBy);
+        const orderBy = getOrderingQuery(sortBy)
         const offset = pageIndex ? pageIndex * pageSize - 1 : 0;
+        console.log(orderBy.join(','));
         fetchMore({
             variables: {
                 first: pageSize,
-                after: getCursorFromOffset(offset)
+                after: getCursorFromOffset(offset),
+                orderBy: orderBy.join(',')
             }
         });
+        // fetchMore still using same original variables -
+        // https://github.com/apollographql/apollo-client/issues/2499
     }, []);
 
     const getTableData = (data) => {
-        alert("get table data");
         const col_order = ["square", "start", "duration", "end", "listing", "price"];
         const table_data = [];
         data?.viewer.products.edges.forEach((edge, i) => {
             const o = {};
             col_order.forEach((key, i) => {
                 o[`col${i + 1}`] = edge.node[key];
-                if(key == "square"){
+                if (key == "square") {
                     o[`col${i + 1}`] = edge.node[key]["pk"];
                 }
             });
             table_data.push(o);
         });
-        console.log("table data", table_data);
         return table_data;
     };
 
     const getPageCount = (data) => {
         const total_pages = data?.viewer.products.totalPages;
-        console.log(total_pages);
         return total_pages || 0;
     };
-
-    console.log("re render");
 
     return (
         <Table
