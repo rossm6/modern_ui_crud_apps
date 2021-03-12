@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block style %}
+<style>
+  body {
+    font-family: "Open Sans", sans-serif;
+    line-height: 1.25;
+  }
+</style>
+{% endblock style %}
+{% block header %}
+<header>
+    <h1>React Table With Server Side Filtering, Pagination and Sorting</h1>
+</header>
+{% endblock header %}
+{% block js %}
+{% comment %} this renders the products python object as json in a json script {% endcomment %}
+{{ products|json_script:"products" }}
+<script src="{% static 'client/components/products_server_side_table/index.js' %}"></script>
+{% endblock js %}

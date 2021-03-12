@@ -3,6 +3,7 @@ import operator
 from base64 import b64decode as _unbase64
 from base64 import b64encode as _base64
 from functools import reduce
+from base64 import b64decode, b64encode
 
 from django.db.models import Q
 

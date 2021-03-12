@@ -8,6 +8,16 @@
   }
 </style>
 {% endblock style %}
+{% block header %}
+<header>
+This demo is clientside pagination and ordering using the React Table plugin.  The whole dataset is dumped into a json script to be consumed
+by the plugin.  I have an unanswered question - for sorting the date fields we want to really show one date time value and sort on another. How do we do this?
+It seems the answer is to implement our own sortType.  This is passed the two rows to compare.  The question is then, how do we get the custom properites
+from the cell which presumably is acessible from the row object?  Have not answered this because server side sorting is higher priority.
+</header>
+{% endblock header %}
 {% block js %}
+{% comment %} this renders the products python object as json in a json script {% endcomment %}
+{{ products|json_script:"products" }}
 <script src="{% static 'client/components/table_form/index.js' %}"></script>
 {% endblock js %}

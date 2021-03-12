@@ -1,8 +1,10 @@
 import graphene
 import people.schema
+import squares.schema
 
 class Query(
-    people.schema.Query,
+    # people.schema.Query,
+    squares.schema.Query,
     graphene.ObjectType
 ):
     pass

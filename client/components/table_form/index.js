@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from "react-dom";
 import { ApolloProvider, ApolloClient, InMemoryCache } from "@apollo/client";
-import { useTable, useSortBy } from 'react-table'
+import { useTable, useSortBy, usePagination } from 'react-table'
 import styled from 'styled-components'
 
 // Importing the Bootstrap CSS
@@ -92,8 +92,18 @@ function Table({ columns, data }) {
         getTableBodyProps,
         headerGroups,
         rows,
-        prepareRow
-    } = useTable({ columns, data }, useSortBy);
+        prepareRow,
+        page,
+        canPreviousPage,
+        canNextPage,
+        pageOptions,
+        pageCount,
+        gotoPage,
+        nextPage,
+        previousPage,
+        setPageSize,
+        state: { pageIndex, pageSize }
+    } = useTable({ columns, data, initialState: { pageIndex: 0 } }, useSortBy, usePagination);
 
     return (
         <>
@@ -110,8 +120,8 @@ function Table({ columns, data }) {
                                     <span>
                                         {column.isSorted
                                             ? column.isSortedDesc
-                                                ? <i class="bi bi-caret-down-fill"></i>
-                                                : <i class="bi bi-caret-up-fill"></i>
+                                                ? <i className="bi bi-caret-down-fill"></i>
+                                                : <i className="bi bi-caret-up-fill"></i>
                                             : ''}
                                     </span>
                                 </th>
@@ -120,7 +130,7 @@ function Table({ columns, data }) {
                     ))}
                 </thead>
                 <tbody {...getTableBodyProps()}>
-                    {rows.map(row => {
+                    {page.map((row, i) => {
                         prepareRow(row)
                         return (
                             <tr {...row.getRowProps()}>
@@ -138,33 +148,78 @@ function Table({ columns, data }) {
                     })}
                 </tbody>
             </table>
-            <br />
+            <div className="pagination">
+                <button onClick={() => gotoPage(0)} disabled={!canPreviousPage}>
+                    {'<<'}
+                </button>{' '}
+                <button onClick={() => previousPage()} disabled={!canPreviousPage}>
+                    {'<'}
+                </button>{' '}
+                <button onClick={() => nextPage()} disabled={!canNextPage}>
+                    {'>'}
+                </button>{' '}
+                <button onClick={() => gotoPage(pageCount - 1)} disabled={!canNextPage}>
+                    {'>>'}
+                </button>{' '}
+                <span>
+                    Page{' '}
+                    <strong>
+                        {pageIndex + 1} of {pageOptions.length}
+                    </strong>{' '}
+                </span>
+                <span>
+                    | Go to page:{' '}
+                    <input
+                        type="number"
+                        defaultValue={pageIndex + 1}
+                        onChange={e => {
+                            const page = e.target.value ? Number(e.target.value) - 1 : 0
+                            gotoPage(page)
+                        }}
+                        style={{ width: '100px' }}
+                    />
+                </span>{' '}
+                <select
+                    value={pageSize}
+                    onChange={e => {
+                        setPageSize(Number(e.target.value))
+                    }}
+                >
+                    {[10, 20, 30, 40, 50].map(pageSize => (
+                        <option key={pageSize} value={pageSize}>
+                            Show {pageSize}
+                        </option>
+                    ))}
+                </select>
+            </div>
         </>
     )
 }
 
+
+const products = JSON.parse(document.getElementById('products').textContent);
+const products_for_app = [];
+products.forEach((prod, index) => {
+    const keys = Object.keys(prod);
+    const values = Object.values(prod);
+    const col_order = ["square", "start", "duration", "end", "listing", "price"];
+    const p = {};
+    values.forEach((val, i) => {
+        const key_for_val = keys[i];
+        const col_index = col_order.indexOf(key_for_val);
+        if(col_index !== -1){
+            p[`col${col_index + 1}`] = val;
+        }
+    });
+    products_for_app.push(p);
+});
+
+console.log("products");
+console.log(products_for_app);
+
 function App() {
-    const data = React.useMemo(
-        () => [
-            {
-                col1: 1,
-                col2: "1 Apr 2021",
-                col3: "1 day",
-                col4: "2 Apr 2021",
-                col5: "lease",
-                col6: "100.50"
-            },
-            {
-                col1: 2,
-                col2: "2 Apr 2021",
-                col3: "1 day",
-                col4: "3 Apr 2021",
-                col5: "sale",
-                col6: "113.50"
-            }
-        ],
-        []
-    );
+
+    const data = React.useMemo(() => products_for_app, []);
 
     const columns = React.useMemo(
         () => [

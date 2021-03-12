@@ -7,6 +7,7 @@ module.exports = {
         './client/components/loadmore/index': './client/components/loadmore/index.js',
         './client/components/pagination/index': './client/components/pagination/index.js',
         './client/components/table_form/index': './client/components/table_form/index.js',
+        './client/components/products_server_side_table/index': './client/components/products_server_side_table/index.js',
     },
     output: {
         filename: '[name].js',  // output bundle file name
