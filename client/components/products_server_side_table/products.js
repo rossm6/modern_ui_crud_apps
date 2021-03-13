@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTable, useSortBy, usePagination } from "react-table";
 import { gql, useQuery } from "@apollo/client";
 
@@ -15,9 +15,9 @@ export const LOAD_PRODUCTS = gql`
                 id
                 pk
             }
-            start
-            duration
-            end
+            startUi
+            durationUi
+            endUi
             listing
             price
           }
@@ -45,7 +45,7 @@ export const LOAD_PRODUCTS = gql`
             isCurrent
           }
         }
-        totalPages
+        total
       }
     }
   }
@@ -89,9 +89,24 @@ function Table({
 
     useEffect(() => {
         if (!loading) {
+            console.log("fetch data");
             fetchData({ pageIndex, pageSize, sortBy });
         }
     }, [sortBy, fetchData, pageIndex, pageSize]);
+
+    const getPageButtons = (currentPageIndex, lastPageIndex, gotoPage) => {
+        const around = [-2, -1, 0, 1, 2];
+        let buttons = [];
+        around.forEach((m, i) => {
+            const pageIndex = currentPageIndex + m;
+            const isCurrent = pageIndex == currentPageIndex;
+            if (pageIndex >= 0 && pageIndex <= lastPageIndex) {
+                let b = <button key={i} onClick={() => !isCurrent && gotoPage(pageIndex)}>{pageIndex + 1}</button>;
+                buttons.push(b);
+            }
+        });
+        return buttons;
+    };
 
     return (
         <>
@@ -149,10 +164,11 @@ function Table({
                 <button onClick={() => previousPage()} disabled={!canPreviousPage}>
                     {"<"}
                 </button>{" "}
+                {getPageButtons(pageIndex, controlledPageCount - 1, gotoPage)}
                 <button onClick={() => nextPage()} disabled={!canNextPage}>
                     {">"}
                 </button>{" "}
-                <button onClick={() => gotoPage(pageCount - 1)} disabled={!canNextPage}>
+                <button onClick={() => gotoPage(controlledPageCount - 1)} disabled={!canNextPage}>
                     {">>"}
                 </button>{" "}
                 <span>
@@ -161,18 +177,6 @@ function Table({
                         {pageIndex + 1} of {pageOptions.length}
                     </strong>{" "}
                 </span>
-                <span>
-                    | Go to page:{" "}
-                    <input
-                        type="number"
-                        defaultValue={pageIndex + 1}
-                        onChange={(e) => {
-                            const page = e.target.value ? Number(e.target.value) - 1 : 0;
-                            gotoPage(page);
-                        }}
-                        style={{ width: "100px" }}
-                    />
-                </span>{" "}
                 <select
                     value={pageSize}
                     onChange={(e) => {
@@ -191,19 +195,28 @@ function Table({
 }
 
 function App() {
+    const pageSize = useRef(10);
+
     const { loading,
         data,
         fetchMore, }
         = useQuery(LOAD_PRODUCTS, {
             variables: {
-                first: 10,
+                first: pageSize.current,
                 after: ''
             },
-            fetchPolicy: 'network-only'
+            fetchPolicy: 'cache-first'
             // fetchPolicy: 'no-cache' causes the original query
             // to fire after every new query
             // as well as being stupid this ruins the table because the original result only shows
             // Possible bug to replicate
+            // I noticed later that 'network-only' was doing the same thing although this didn't result
+            // in the second query, the original, rendering the UI with the data from the server.
+            // So this is a bug and then given this bug another it seems lol
+            // Issue - https://github.com/apollographql/apollo-client/issues/6313
+            // fetchPolicy: 'cache-first' will check the cache first but will always hit the server because
+            // the cache is always cleaned out to contain only the latest page as per the merge function
+            // defined in the typePolicy
         });
 
     const columns = React.useMemo(
@@ -234,6 +247,12 @@ function App() {
             }
         ]
     );
+
+    const from_field_to_column = {
+        'start': 'startUi',
+        'duration': 'durationUi',
+        'end': 'endUi',
+    };
 
     const orm_ordering = {
         'col1': 'square_id',
@@ -270,20 +289,21 @@ function App() {
         return encodeCursor(offset);
     };
 
-    const fetchData = React.useCallback(({ pageSize, pageIndex, sortBy }) => {
+    const fetchData = React.useCallback(({ pageSize: _pageSize, pageIndex, sortBy }) => {
         // This will get called when the table needs new data
         // You could fetch your data from literally anywhere,
         // even a server. But for this example, we'll just fake it.
-        const orderBy = getOrderingQuery(sortBy)
-        const offset = pageIndex ? pageIndex * pageSize - 1 : 0;
-        console.log(orderBy.join(','));
+        console.log("FETCH MORE");
+        pageSize.current = _pageSize;
+        const orderBy = getOrderingQuery(sortBy);
+        const offset = pageIndex ? pageIndex * _pageSize - 1 : 0;
         fetchMore({
             variables: {
-                first: pageSize,
+                first: _pageSize,
                 after: getCursorFromOffset(offset),
                 orderBy: orderBy.join(',')
             }
-        });
+        })
         // fetchMore still using same original variables -
         // https://github.com/apollographql/apollo-client/issues/2499
     }, []);
@@ -294,7 +314,7 @@ function App() {
         data?.viewer.products.edges.forEach((edge, i) => {
             const o = {};
             col_order.forEach((key, i) => {
-                o[`col${i + 1}`] = edge.node[key];
+                o[`col${i + 1}`] = edge.node[from_field_to_column[key] || key];
                 if (key == "square") {
                     o[`col${i + 1}`] = edge.node[key]["pk"];
                 }
@@ -305,8 +325,10 @@ function App() {
     };
 
     const getPageCount = (data) => {
-        const total_pages = data?.viewer.products.totalPages;
-        return total_pages || 0;
+        let total = data?.viewer.products.total;
+        total = (total || 0);
+        let pages = Math.floor(total / pageSize.current);
+        return pages;
     };
 
     return (

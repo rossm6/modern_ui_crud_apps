@@ -4,6 +4,7 @@ This module helps with implementing pagination buttons in the UI
 from base64 import b64decode, b64encode
 
 import graphene
+from django.db.models.query import QuerySet
 
 
 class PageCursor(graphene.ObjectType):
@@ -69,7 +70,7 @@ class PaginationConnection(graphene.relay.Connection):
         abstract = True
     pages = graphene.Field(PageCursors, pageSize=graphene.Int())
     # page_size will force a reload and put the user back to page 1
-    total_pages = graphene.Int()
+    total = graphene.Int()
 
     def get_page_number(self, index, page_size):
         return index // page_size + 1
@@ -126,7 +127,7 @@ class PaginationConnection(graphene.relay.Connection):
         page_size = kwargs.get('pageSize', 10)
         return self.get_pages(page_size, page_info.start_cursor, page_info.end_cursor, queryset)
 
-    def resolve_total_pages(self, info):
+    def resolve_total(self, info):
         page_info = self.page_info
-        queryset = self.iterable
-        return queryset.count()
+        q = self.iterable
+        return q.count()
