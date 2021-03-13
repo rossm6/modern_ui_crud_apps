@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block style %}
+<style>
+  body {
+    font-family: "Open Sans", sans-serif;
+    line-height: 1.25;
+  }
+</style>
+{% endblock style %}
+{% block header %}
+<header>
+    <h1 class="h2 font-weight-bold">React Table With Complex Search Form</h1>
+</header>
+{% endblock header %}
+{% block js %}
+{{ products|json_script:"products" }}
+<script src="{% static 'client/components/products_search_form/index.js' %}"></script>
+{% endblock js %}

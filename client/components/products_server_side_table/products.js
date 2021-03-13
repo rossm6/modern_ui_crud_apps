@@ -55,7 +55,6 @@ export const LOAD_PRODUCTS = gql`
   }
 `;
 
-
 function Table({
     columns,
     data,

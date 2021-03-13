@@ -8,6 +8,7 @@ module.exports = {
         './client/components/pagination/index': './client/components/pagination/index.js',
         './client/components/table_form/index': './client/components/table_form/index.js',
         './client/components/products_server_side_table/index': './client/components/products_server_side_table/index.js',
+        './client/components/products_search_form/index': './client/components/products_search_form/index.js',
     },
     output: {
         filename: '[name].js',  // output bundle file name
