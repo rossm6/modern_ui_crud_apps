@@ -97,15 +97,42 @@ function Table({
     }, [sortBy, fetchData, pageIndex, pageSize]);
 
     const getPageButtons = (currentPageIndex, lastPageIndex, gotoPage) => {
+        let pageIndexes = [];
+        pageIndexes.push(0);
         const around = [-2, -1, 0, 1, 2];
-        let buttons = [];
         around.forEach((m, i) => {
             const pageIndex = currentPageIndex + m;
-            const isCurrent = pageIndex == currentPageIndex;
             if (pageIndex >= 0 && pageIndex <= lastPageIndex) {
-                let b = <Pagination.Item key={i} onClick={() => !isCurrent && gotoPage(pageIndex)}>{pageIndex + 1}</Pagination.Item>;
-                buttons.push(b);
+                pageIndexes.push(pageIndex);
             }
+        });
+        if (lastPageIndex > 0) {
+            pageIndexes.push(lastPageIndex);
+        }
+        // remove duplicate indexes
+        const uniquePageIndexes = [...new Set(pageIndexes)];
+        const onClickHandler = (pageIndex, currentIndex) => {
+            const isCurrent = pageIndex == currentIndex;
+            return () => {
+                return !isCurrent && gotoPage(pageIndex)
+            };
+        };
+        uniquePageIndexes.sort();
+        if (uniquePageIndexes.length > 3) {
+            // -1 has special meaning - will create an ellipsis button
+            uniquePageIndexes.splice(1, 0, -1);
+            uniquePageIndexes.splice(uniquePageIndexes.length - 1, 0, -1);
+        }
+        const buttons = [];
+        uniquePageIndexes.forEach((pageIndex, index) => {
+            let b;
+            if (pageIndex == -1) {
+                b = <Pagination.Ellipsis key={index} />;
+            }
+            else {
+                b = <Pagination.Item key={index} active={pageIndex == currentPageIndex} onClick={onClickHandler(pageIndex, currentPageIndex)}>{pageIndex + 1}</Pagination.Item>;
+            }
+            buttons.push(b);
         });
         return buttons;
     };
@@ -171,7 +198,7 @@ function Table({
                     <Pagination className="justify-content-end">
                         <Pagination.First onClick={() => gotoPage(0)} disabled={!canPreviousPage} />
                         <Pagination.Prev onClick={() => previousPage()} disabled={!canPreviousPage} />
-                        {getPageButtons(pageIndex, controlledPageCount - 1, gotoPage)}
+                        {controlledPageCount && getPageButtons(pageIndex, controlledPageCount - 1, gotoPage)}
                         <Pagination.Next onClick={() => nextPage()} disabled={!canNextPage} />
                         <Pagination.Last onClick={() => gotoPage(controlledPageCount - 1)} disabled={!canNextPage} />
                     </Pagination>
