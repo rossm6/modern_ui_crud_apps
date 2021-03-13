@@ -119,6 +119,16 @@
                 {
                   "defaultValue": null,
                   "description": null,
+                  "name": "searchText",
+                  "type": {
+                    "kind": "SCALAR",
+                    "name": "String",
+                    "ofType": null
+                  }
+                },
+                {
+                  "defaultValue": null,
+                  "description": null,
                   "name": "before",
                   "type": {
                     "kind": "SCALAR",
@@ -306,7 +316,7 @@
               "deprecationReason": null,
               "description": null,
               "isDeprecated": false,
-              "name": "totalPages",
+              "name": "total",
               "type": {
                 "kind": "SCALAR",
                 "name": "Int",

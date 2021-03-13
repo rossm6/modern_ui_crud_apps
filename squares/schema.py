@@ -161,7 +161,7 @@ class ViewerNode(graphene.ObjectType):
     class Meta:
         interfaces = (graphene.relay.Node,)
     products = graphene.relay.ConnectionField(
-        PaginateProductConnection, args={'orderBy': graphene.String()})
+        PaginateProductConnection, args={'orderBy': graphene.String(), 'searchText': graphene.String()})
 
     def resolve_products(root, info, **kwargs):
         """
@@ -208,6 +208,8 @@ class ViewerNode(graphene.ObjectType):
             )
             .annotate(duration_ui=choices_display('duration', Product.durations))
         )
+        if searchText := kwargs.get('searchText'):
+            q = q.filter(listing=searchText)
         q = order_queryset(q, **kwargs)
         return q
 

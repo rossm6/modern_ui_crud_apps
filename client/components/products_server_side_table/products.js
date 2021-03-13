@@ -3,14 +3,16 @@ import { useTable, useSortBy, usePagination } from "react-table";
 import { gql, useQuery } from "@apollo/client";
 import Pagination from "react-bootstrap/Pagination";
 import Form from "react-bootstrap/Form";
+import Row from "react-bootstrap/Row";
+import Col from "react-bootstrap/Col";
 
 // page size is fixed at 5 to begin with
 
 export const LOAD_PRODUCTS = gql`
-  query LoadProducts ($first: Int, $after: String, $pageSize: Int, $orderBy: String) {
+  query LoadProducts ($first: Int, $after: String, $pageSize: Int, $orderBy: String, $searchText: String) {
     viewer {
       id
-      products (first: $first, after: $after, orderBy: $orderBy) {
+      products (first: $first, after: $after, orderBy: $orderBy, searchText: $searchText) {
         edges {
           node {
             square {
@@ -53,13 +55,15 @@ export const LOAD_PRODUCTS = gql`
   }
 `;
 
+
 function Table({
     columns,
     data,
     onSort,
     fetchData,
     loading,
-    pageCount: controlledPageCount
+    pageCount: controlledPageCount,
+    total
 }) {
     const {
         getTableProps,
@@ -88,13 +92,13 @@ function Table({
         useSortBy,
         usePagination
     );
+    const [searchText, setSearchText] = useState('');
 
     useEffect(() => {
         if (!loading) {
-            console.log("fetch data");
-            fetchData({ pageIndex, pageSize, sortBy });
+            fetchData({ pageIndex, pageSize, sortBy, searchText });
         }
-    }, [sortBy, fetchData, pageIndex, pageSize]);
+    }, [sortBy, fetchData, pageIndex, pageSize, searchText]);
 
     const getPageButtons = (currentPageIndex, lastPageIndex, gotoPage) => {
         let pageIndexes = [];
@@ -117,7 +121,8 @@ function Table({
                 return !isCurrent && gotoPage(pageIndex)
             };
         };
-        uniquePageIndexes.sort();
+        uniquePageIndexes.sort((a, b) => a - b);
+        console.log(uniquePageIndexes);
         if (uniquePageIndexes.length > 3) {
             // -1 has special meaning - will create an ellipsis button
             uniquePageIndexes.splice(1, 0, -1);
@@ -137,20 +142,34 @@ function Table({
         return buttons;
     };
 
+    const searchSquares = (text) => {
+        setSearchText(text);
+    };
+
+    // alert("ALERT - " + controlledPageCount);
+
     return (
         <>
             <div className="my-2">
-                <Form.Control className="w-auto" as="select" custom
-                    value={pageSize}
-                    onChange={(e) => {
-                        setPageSize(Number(e.target.value));
-                    }}>
-                    {[10, 20, 30, 40, 50].map((pageSize) => (
-                        <option key={pageSize} value={pageSize}>
-                            Show {pageSize}
-                        </option>
-                    ))}
-                </Form.Control>
+                <div className="d-flex justify-content-between">
+                    <div>
+                        <Form.Control className="w-auto" as="select" custom
+                            value={pageSize}
+                            onChange={(e) => {
+                                setPageSize(Number(e.target.value));
+                            }}>
+                            {[10, 20, 30, 40, 50].map((pageSize) => (
+                                <option key={pageSize} value={pageSize}>
+                                    Show {pageSize}
+                                </option>
+                            ))}
+                        </Form.Control>
+                    </div>
+                    <div>
+                        <Form.Control onChange={(e) => searchSquares(e.target.value)} type="text" placeholder="Search Squares ..." />
+                    </div>
+                </div>
+
             </div>
             <table {...getTableProps()} className="table">
                 <thead>
@@ -188,20 +207,21 @@ function Table({
                         );
                     })}
                     {loading && <tr><td colSpan="10000">Loading...</td></tr>}
+                    {!total && <tr><td className="text-center" colSpan="10000">Nothing found...</td></tr>}
                 </tbody>
             </table>
             <div className="row">
                 <div className="col">
-                    <span>Showing {page.length} of ~{controlledPageCount * pageSize}{" "} results</span>
+                    <span>Showing {page.length} of {total}{" "} results</span>
                 </div>
                 <div className="col">
-                    <Pagination className="justify-content-end">
+                    {controlledPageCount ? <Pagination className="justify-content-end">
                         <Pagination.First onClick={() => gotoPage(0)} disabled={!canPreviousPage} />
                         <Pagination.Prev onClick={() => previousPage()} disabled={!canPreviousPage} />
-                        {controlledPageCount && getPageButtons(pageIndex, controlledPageCount - 1, gotoPage)}
+                        {getPageButtons(pageIndex, controlledPageCount - 1, gotoPage)}
                         <Pagination.Next onClick={() => nextPage()} disabled={!canNextPage} />
                         <Pagination.Last onClick={() => gotoPage(controlledPageCount - 1)} disabled={!canNextPage} />
-                    </Pagination>
+                    </Pagination> : null}
                 </div>
             </div>
         </>
@@ -303,11 +323,7 @@ function App() {
         return encodeCursor(offset);
     };
 
-    const fetchData = React.useCallback(({ pageSize: _pageSize, pageIndex, sortBy }) => {
-        // This will get called when the table needs new data
-        // You could fetch your data from literally anywhere,
-        // even a server. But for this example, we'll just fake it.
-        console.log("FETCH MORE");
+    const fetchData = React.useCallback(({ pageSize: _pageSize, pageIndex, sortBy, searchText }) => {
         pageSize.current = _pageSize;
         const orderBy = getOrderingQuery(sortBy);
         const offset = pageIndex ? pageIndex * _pageSize - 1 : 0;
@@ -315,7 +331,8 @@ function App() {
             variables: {
                 first: _pageSize,
                 after: getCursorFromOffset(offset),
-                orderBy: orderBy.join(',')
+                orderBy: orderBy.join(','),
+                searchText: searchText
             }
         })
         // fetchMore still using same original variables -
@@ -338,11 +355,15 @@ function App() {
         return table_data;
     };
 
-    const getPageCount = (data) => {
+    const getTotal = () => {
         let total = data?.viewer.products.total;
-        total = (total || 0);
-        let pages = Math.floor(total / pageSize.current);
-        return pages;
+        return 0 || total;
+    };
+
+    const getPageCount = (data) => {
+        const total = getTotal(data);
+        if (!total) return 0;
+        return total > pageSize.current ? Math.floor(total / pageSize.current) : 1;
     };
 
     return (
@@ -351,6 +372,7 @@ function App() {
             data={getTableData(data)}
             fetchData={fetchData}
             loading={loading}
+            total={getTotal(data)}
             pageCount={getPageCount(data)}
         />
     );
