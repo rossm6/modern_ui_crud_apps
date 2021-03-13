@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTable, useSortBy, usePagination } from "react-table";
 import { gql, useQuery } from "@apollo/client";
+import Pagination from "react-bootstrap/Pagination";
+import Form from "react-bootstrap/Form";
 
 // page size is fixed at 5 to begin with
 
@@ -101,7 +103,7 @@ function Table({
             const pageIndex = currentPageIndex + m;
             const isCurrent = pageIndex == currentPageIndex;
             if (pageIndex >= 0 && pageIndex <= lastPageIndex) {
-                let b = <button key={i} onClick={() => !isCurrent && gotoPage(pageIndex)}>{pageIndex + 1}</button>;
+                let b = <Pagination.Item key={i} onClick={() => !isCurrent && gotoPage(pageIndex)}>{pageIndex + 1}</Pagination.Item>;
                 buttons.push(b);
             }
         });
@@ -110,7 +112,20 @@ function Table({
 
     return (
         <>
-            <table {...getTableProps()}>
+            <div className="my-2">
+                <Form.Control className="w-auto" as="select" custom
+                    value={pageSize}
+                    onChange={(e) => {
+                        setPageSize(Number(e.target.value));
+                    }}>
+                    {[10, 20, 30, 40, 50].map((pageSize) => (
+                        <option key={pageSize} value={pageSize}>
+                            Show {pageSize}
+                        </option>
+                    ))}
+                </Form.Control>
+            </div>
+            <table {...getTableProps()} className="table">
                 <thead>
                     {headerGroups.map((headerGroup) => (
                         <tr {...headerGroup.getHeaderGroupProps()}>
@@ -145,50 +160,22 @@ function Table({
                             </tr>
                         );
                     })}
-                    <tr>
-                        {loading ? (
-                            // Use our custom loading state to show a loading indicator
-                            <td colSpan="10000">Loading...</td>
-                        ) : (
-                            <td colSpan="10000">
-                                Showing {page.length} of ~{controlledPageCount * pageSize}{" "} results
-                            </td>
-                        )}
-                    </tr>
+                    {loading && <tr><td colSpan="10000">Loading...</td></tr>}
                 </tbody>
             </table>
-            <div className="pagination">
-                <button onClick={() => gotoPage(0)} disabled={!canPreviousPage}>
-                    {"<<"}
-                </button>{" "}
-                <button onClick={() => previousPage()} disabled={!canPreviousPage}>
-                    {"<"}
-                </button>{" "}
-                {getPageButtons(pageIndex, controlledPageCount - 1, gotoPage)}
-                <button onClick={() => nextPage()} disabled={!canNextPage}>
-                    {">"}
-                </button>{" "}
-                <button onClick={() => gotoPage(controlledPageCount - 1)} disabled={!canNextPage}>
-                    {">>"}
-                </button>{" "}
-                <span>
-                    Page{" "}
-                    <strong>
-                        {pageIndex + 1} of {pageOptions.length}
-                    </strong>{" "}
-                </span>
-                <select
-                    value={pageSize}
-                    onChange={(e) => {
-                        setPageSize(Number(e.target.value));
-                    }}
-                >
-                    {[10, 20, 30, 40, 50].map((pageSize) => (
-                        <option key={pageSize} value={pageSize}>
-                            Show {pageSize}
-                        </option>
-                    ))}
-                </select>
+            <div className="row">
+                <div className="col">
+                    <span>Showing {page.length} of ~{controlledPageCount * pageSize}{" "} results</span>
+                </div>
+                <div className="col">
+                    <Pagination className="justify-content-end">
+                        <Pagination.First onClick={() => gotoPage(0)} disabled={!canPreviousPage} />
+                        <Pagination.Prev onClick={() => previousPage()} disabled={!canPreviousPage} />
+                        {getPageButtons(pageIndex, controlledPageCount - 1, gotoPage)}
+                        <Pagination.Next onClick={() => nextPage()} disabled={!canNextPage} />
+                        <Pagination.Last onClick={() => gotoPage(controlledPageCount - 1)} disabled={!canNextPage} />
+                    </Pagination>
+                </div>
             </div>
         </>
     );

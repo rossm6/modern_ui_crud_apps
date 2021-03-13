@@ -12,6 +12,33 @@ from squares.models import Product, Square
 from squares.serializers import ProductSerializer
 
 
+"""
+query A {
+  viewer {
+    products {
+      edges {
+        node {
+          square {
+            pk
+          }
+          durationUi
+          startUi
+          start
+          duration
+        }
+        cursor
+      }
+      pages {
+        first {
+          isCurrent
+        }
+      }
+    }
+  }
+}
+"""
+
+
 class ProductFilter(FilterSet):
     class Meta:
         model = Product
@@ -93,6 +120,7 @@ class PaginateProductConnection(PaginationConnection):
     class Meta:
         node = ProductNode
 
+
 def order_queryset(q, **kwargs):
     if order_by := kwargs.get('orderBy'):
         order_by = order_by.split(',')
@@ -116,6 +144,7 @@ def order_queryset(q, **kwargs):
     We need to format the values pulled out of sql because it won't accept dicts;
     it needs a model object instance instead.
 """
+
 
 def choices_display(field_name, choices):
     whens = []
