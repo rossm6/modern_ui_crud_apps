@@ -196,7 +196,6 @@ function Table({ columns, data }) {
     )
 }
 
-
 const products = JSON.parse(document.getElementById('products').textContent);
 const products_for_app = [];
 products.forEach((prod, index) => {
