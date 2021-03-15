@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, forwardRef } from 'react';
 import { Formik, Field, useFormikContext } from 'formik';
 import * as Yup from 'yup';
 import Form from 'react-bootstrap/Form';
@@ -7,21 +7,13 @@ import Alert from 'react-bootstrap/Alert';
 import Col from 'react-bootstrap/Col';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
-import 'antd/dist/antd.css';
-import { DatePicker } from 'antd';
+import DatePicker from "react-datepicker";
+// import { parse } from "date-fns/parse"; was going to use this for parsing the datetime string
+// still might need it for the dates
+import DropdownMultiselect from "react-multiselect-dropdown-bootstrap"; // may be better - https://github.com/harshzalavadiya/react-multi-select-component#readme
 
-
-/* 
-
-    Annoyingly Bootstrap does not have it's own datepicker / datetimepicker
-    so I've gone for the one in the Ant UI framework.
-
-    This means we have to style the widget so it looks bootstrap-ey
-    and wrap the component in our component to wire it up
-    to formik.
-
-*/
-
+import "react-datepicker/dist/react-datepicker.css";
+import "./style.css";
 
 /*
 
@@ -31,58 +23,124 @@ import { DatePicker } from 'antd';
 
     We could really do with improving the fields.  Take a
     look at Select for example.  It seems lots of things aren't used
-    in the component.
+    in the component.  I WAS CONFUSED ABOUT <Field>.  This is a
+    formik component which makes more sense.
+
+    I cannot get the multiselect to validate that at least one is chosen
+    from the array.
 
 */
 
 
-const FormikRangePicker = (props) => {
+// const FormikRangePicker = (props) => {
+//     const formik = props.formik;
+
+//     const onChange = (fieldValue) => {
+//         // fieldValue is [momemt, moment]
+//         // moment is a moment js object
+//         formik.setFieldValue(props.name, fieldValue);
+//     };
+
+//     const onBlur = (e) => {
+//         formik.setFieldTouched(props.name, true);
+//     };
+
+//     let c = null;
+//     if (formik.touched[props.name]) {
+//         if (!formik.errors[props.name]) {
+//             c = "border-success";
+//         }
+//         else {
+//             c = "border-danger";
+//         }
+//     }
+
+//     return (
+//         <>
+//             <DatePicker.RangePicker
+//                 name={props.name}
+//                 showTime={{ format: 'HH:mm' }}
+//                 format="YYYY-MM-DD HH:mm"
+//                 size="large"
+//                 onChange={onChange}
+//                 className={c}
+//                 onBlur={onBlur}
+//             />
+//             {
+//                 formik.touched[props.name]
+//                 && !formik.errors[props.name]
+//                 && <div className="mt-1 text-success small">Looks good!</div>
+//             }
+//             {
+//                 formik.errors[props.name]
+//                 && <div className="mt-1 text-danger small">{formik.errors[props.name]}</div>
+//             }
+//         </>
+//     )
+// };
+
+
+
+const DateTimePickerRange = (props) => {
     const formik = props.formik;
+    const startDateFieldName = props.startDateFieldName;
+    const endDateFieldName = props.endDateFieldName;
 
-    const onChange = (fieldValue) => {
-        // fieldValue is [momemt, moment]
-        // moment is a moment js object
-        formik.setFieldValue(props.name, fieldValue);
+    // validation messages have been ignored because
+    // the error cannot enter an invalid date range
+    // given component set up
+    // and blank is fine as well
+
+    const CustomInput = forwardRef(({ value, onClick }, ref) => (
+        <Form.Control onClick={onClick} ref={ref} value={value} />
+    ));
+
+    const onStartDateChange = (fieldValue) => {
+        formik.setFieldValue(startDateFieldName, fieldValue);
     };
 
-    const onBlur = (e) => {
-        formik.setFieldTouched(props.name, true);
+    const onEndDateChange = (fieldValue) => {
+        formik.setFieldValue(endDateFieldName, fieldValue);
     };
 
-    let c = null;
-    if (formik.touched[props.name]) {
-        if (!formik.errors[props.name]) {
-            c = "border-success";
-        }
-        else {
-            c = "border-danger";
-        }
-    }
+    const onStartDateBlur = () => {
+        formik.setFieldTouched(startDateFieldName, true);
+    };
+
+    const onEndDateBlur = () => {
+        formik.setFieldTouched(endDateFieldName, true);
+    };
 
     return (
-        <>
-            <DatePicker.RangePicker
-                name={props.name}
-                showTime={{ format: 'HH:mm' }}
-                format="YYYY-MM-DD HH:mm"
-                size="large"
-                onChange={onChange}
-                className={c}
-                onBlur={onBlur}
-            />
-            {
-                formik.touched[props.name]
-                && !formik.errors[props.name]
-                && <div className="mt-1 text-success small">Looks good!</div>
-            }
-            {
-                formik.errors[props.name]
-                && <div className="mt-1 text-danger small">{formik.errors[props.name]}</div>
-            }
-        </>
+        <Form.Row>
+            <Form.Group as={Col}>
+                <Form.Label>{props.startDateFieldLabel}</Form.Label>
+                <DatePicker
+                    selected={formik.values[startDateFieldName] || null}
+                    onChange={date => onStartDateChange(date)}
+                    onBlur={onStartDateBlur}
+                    selectsStart
+                    startDate={formik.values[startDateFieldName] || null}
+                    endDate={formik.values[endDateFieldName] || null}
+                    customInput={<CustomInput />}
+                />
+            </Form.Group>
+            <Form.Group as={Col}>
+                <Form.Label>{props.endDateFieldLabel}</Form.Label>
+                <DatePicker
+                    selected={formik.values[endDateFieldName] || null}
+                    onChange={date => onEndDateChange(date)}
+                    onBlur={onEndDateBlur}
+                    selectsEnd
+                    startDate={formik.values[startDateFieldName] || null}
+                    endDate={formik.values[endDateFieldName] || null}
+                    minDate={formik.values[startDateFieldName] || null}
+                    customInput={<CustomInput />}
+                />
+            </Form.Group>
+        </Form.Row>
     )
 };
-
 
 const Select = ({ label, name, formik, children }) => {
     return (
@@ -161,55 +219,71 @@ const ProductSearchForm = () => {
                 startDateRange: '',
                 endDateRange: '',
                 duration: '',
+                listing: ['l', 's']
             }}
             validationSchema={
-                Yup.object({
-                    fromSquare: Yup.number().min(1).max(1000).nullable(),
-                    toSquare: (
-                        Yup
-                            .number()
-                            .min(1)
-                            .max(1000)
-                            .nullable()
-                            .when('fromSquare', (fromSquare, schema) => {
-                                return (!isNaN(fromSquare)) ? schema.min(fromSquare, 'Cannot be less than fromSquare') : schema.min(1)
-                            })
-                    ),
-                    fromPrice: Yup.number().min(0, "I'm not that stupid!").max(1000000, "I wish!").nullable(),
-                    toPrice: (
-                        Yup
-                            .number()
-                            .min(0, "I'm not that stupid!")
-                            .max(1000000, "I wish!")
-                            .nullable()
-                            .when('fromPrice', (fromPrice, schema) => {
-                                return (!isNaN(fromPrice)) ? schema.min(fromPrice, 'Cannot be less than fromPrice') : schema.min(0, "I'm not that stupid!")
-                            })
-                    ),
-                    // fromStart: Yup.string().nullable(),
-                    // toStart: (
+                Yup.object().shape({
+                    // fromSquare: Yup.number().min(1).max(1000).nullable(),
+                    // toSquare: (
                     //     Yup
-                    //         .string()
+                    //         .number()
+                    //         .min(1)
+                    //         .max(1000)
                     //         .nullable()
-                    //         .when('fromStart', (fromStart, schema) => {
-                    //             //
+                    //         .when('fromSquare', (fromSquare, schema) => {
+                    //             return (!isNaN(fromSquare)) ? schema.min(fromSquare, 'Cannot be less than fromSquare') : schema.min(1)
                     //         })
                     // ),
-                    // fromEnd: Yup.string().nullable(),
-                    // toEnd: (
+                    // fromPrice: Yup.number().min(0, "I'm not that stupid!").max(1000000, "I wish!").nullable(),
+                    // toPrice: (
                     //     Yup
-                    //         .string()
+                    //         .number()
+                    //         .min(0, "I'm not that stupid!")
+                    //         .max(1000000, "I wish!")
                     //         .nullable()
-                    //         .when('fromEnd', (fromStart, schema) => {
-                    //             //
+                    //         .when('fromPrice', (fromPrice, schema) => {
+                    //             return (!isNaN(fromPrice)) ? schema.min(fromPrice, 'Cannot be less than fromPrice') : schema.min(0, "I'm not that stupid!")
                     //         })
                     // ),
-                    duration: Yup.string().nullable().oneOf(["1d", "2d", "3d", "4d", "5d", "6d", "7d"], "Choose a valid duration.  Any day from 1 to 7 days.")
+                    // // fromStart: Yup.string().nullable(),
+                    // // toStart: (
+                    // //     Yup
+                    // //         .string()
+                    // //         .nullable()
+                    // //         .when('fromStart', (fromStart, schema) => {
+                    // //             //
+                    // //         })
+                    // // ),
+                    // // fromEnd: Yup.string().nullable(),
+                    // // toEnd: (
+                    // //     Yup
+                    // //         .string()
+                    // //         .nullable()
+                    // //         .when('fromEnd', (fromStart, schema) => {
+                    // //             //
+                    // //         })
+                    // // ),
+                    // duration: Yup.string().nullable().oneOf(["1d", "2d", "3d", "4d", "5d", "6d", "7d"], "Choose a valid duration.  Any day from 1 to 7 days."),
+                    listing: Yup.array().required().of(Yup.string()).test({
+                        name: 'multipleSelect',
+                        test: (vals) => {
+                            console.log(vals);
+                            let error = false;
+                            vals.forEach((v) => {
+                                if(["l", "s"].indexOf(v) == -1){
+                                    error = true;
+                                    return;
+                                }
+                            });
+                            return error == false;
+                        },
+                        message: "Choices are lease or sale"
+                    })
                 })
             }
         >
             {formik => {
-                {/* console.log("formik", formik); */}
+                console.log("formik", formik);
                 return (
                     <Container>
                         <Row>
@@ -239,16 +313,20 @@ const ProductSearchForm = () => {
                                             }
                                         )
                                     }
-                                    <Form.Row>
-                                        <Form.Group>
-                                            <FormikRangePicker formik={formik} name="startDateRange" />
-                                        </Form.Group>
-                                    </Form.Row>
-                                    <Form.Row>
-                                        <Form.Group>
-                                            <FormikRangePicker formik={formik} name="endDateRange" />
-                                        </Form.Group>
-                                    </Form.Row>
+                                    {/* <DateTimePickerRange
+                                        formik={formik}
+                                        startDateFieldLabel="From Start Date"
+                                        startDateFieldName="fromStartDate"
+                                        endDateFieldName="toStartDate"
+                                        endDateFieldLabel="To Start Date"
+                                    />
+                                    <DateTimePickerRange
+                                        formik={formik}
+                                        startDateFieldLabel="From End Date"
+                                        startDateFieldName="fromEndDate"
+                                        endDateFieldLabel="To End Date"
+                                        endDateFieldName="toEndDate"
+                                    /> */}
                                     <Form.Row>
                                         <Form.Group as={Col}>
                                             <Select label="Duration" name="duration" formik={formik}>
@@ -261,6 +339,30 @@ const ProductSearchForm = () => {
                                                 <option value="6d">6 days</option>
                                                 <option value="7d">7 days</option>
                                             </Select>
+                                        </Form.Group>
+                                    </Form.Row>
+                                    <Form.Row>
+                                        <Form.Group>
+                                            <Form.Label>Listing</Form.Label>
+                                            <Field name="listing">
+                                                {
+                                                    ({
+                                                        field,
+                                                        form: { touched, errors },
+                                                        meta
+                                                    }) => (
+                                                        <DropdownMultiselect
+                                                            selected={["l", "s"]}
+                                                            options={[{ key: "l", label: "Lease" }, { key: "s", label: "Sale" }]}
+                                                            name="listing"
+                                                            handleOnChange={(val) => formik.setFieldValue('listing', val)}
+                                                        />
+                                                    )
+                                                }
+                                            </Field>
+                                            {/* {formik.errors.listing && <div className="small text-danger mt-1">{formik.errors.listing}</div>} */}
+                                            {formik.values.listing}
+                                            {formik.errors.listing}
                                         </Form.Group>
                                     </Form.Row>
                                 </Form>

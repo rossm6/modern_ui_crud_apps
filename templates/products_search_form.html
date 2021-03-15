@@ -2,14 +2,28 @@
 {% load static %}
 {% block style %}
 <style>
+
   body {
     font-family: "Open Sans", sans-serif;
     line-height: 1.25;
   }
 
-  .invalid.ant-picker {
-      border-color: #dc3545;
-      outline: 0;
+  .react-datepicker__navigation react-datepicker__navigation--next react-datepicker__navigation--next--with-time {
+    right: 0px;
+  }
+
+  .react-datepicker__navigation--next--with-time:not(.react-datepicker__navigation--next--with-today-button) {
+    right: 0px;
+  }
+
+  .react-datepicker__month-container {
+    float: none;
+  }
+
+  .react-datepicker__time-container  {
+    float: none;
+    width: 100%;
+    border-left: none;
   }
 
 </style>
