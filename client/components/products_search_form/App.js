@@ -11,6 +11,7 @@ import DatePicker from "react-datepicker";
 // import { parse } from "date-fns/parse"; was going to use this for parsing the datetime string
 // still might need it for the dates
 import DropdownMultiselect from "react-multiselect-dropdown-bootstrap"; // may be better - https://github.com/harshzalavadiya/react-multi-select-component#readme
+import Slider from "./Slider";
 
 import "react-datepicker/dist/react-datepicker.css";
 import "./style.css";
@@ -30,55 +31,6 @@ import "./style.css";
     from the array.
 
 */
-
-
-// const FormikRangePicker = (props) => {
-//     const formik = props.formik;
-
-//     const onChange = (fieldValue) => {
-//         // fieldValue is [momemt, moment]
-//         // moment is a moment js object
-//         formik.setFieldValue(props.name, fieldValue);
-//     };
-
-//     const onBlur = (e) => {
-//         formik.setFieldTouched(props.name, true);
-//     };
-
-//     let c = null;
-//     if (formik.touched[props.name]) {
-//         if (!formik.errors[props.name]) {
-//             c = "border-success";
-//         }
-//         else {
-//             c = "border-danger";
-//         }
-//     }
-
-//     return (
-//         <>
-//             <DatePicker.RangePicker
-//                 name={props.name}
-//                 showTime={{ format: 'HH:mm' }}
-//                 format="YYYY-MM-DD HH:mm"
-//                 size="large"
-//                 onChange={onChange}
-//                 className={c}
-//                 onBlur={onBlur}
-//             />
-//             {
-//                 formik.touched[props.name]
-//                 && !formik.errors[props.name]
-//                 && <div className="mt-1 text-success small">Looks good!</div>
-//             }
-//             {
-//                 formik.errors[props.name]
-//                 && <div className="mt-1 text-danger small">{formik.errors[props.name]}</div>
-//             }
-//         </>
-//     )
-// };
-
 
 
 const DateTimePickerRange = (props) => {
@@ -114,7 +66,7 @@ const DateTimePickerRange = (props) => {
     return (
         <Form.Row>
             <Form.Group as={Col}>
-                <Form.Label>{props.startDateFieldLabel}</Form.Label>
+                <Form.Label className="font-weight-bold">{props.startDateFieldLabel}</Form.Label>
                 <DatePicker
                     selected={formik.values[startDateFieldName] || null}
                     onChange={date => onStartDateChange(date)}
@@ -126,7 +78,7 @@ const DateTimePickerRange = (props) => {
                 />
             </Form.Group>
             <Form.Group as={Col}>
-                <Form.Label>{props.endDateFieldLabel}</Form.Label>
+                <Form.Label className="font-weight-bold">{props.endDateFieldLabel}</Form.Label>
                 <DatePicker
                     selected={formik.values[endDateFieldName] || null}
                     onChange={date => onEndDateChange(date)}
@@ -155,7 +107,7 @@ const Select = ({ label, name, formik, children }) => {
                     }) => (
                         <Form.Control
                             as="select"
-                            isValid={formik.touched[name] && !formik.errors[name]}
+                            // isValid={formik.touched[name] && !formik.errors[name]}
                             isInvalid={formik.touched[name] && !!formik.errors[name]}
                             {...field}
                         >
@@ -164,16 +116,16 @@ const Select = ({ label, name, formik, children }) => {
                     )
                 }
             </Field>
-            <Form.Control.Feedback>Looks good!</Form.Control.Feedback>
+            {/* <Form.Control.Feedback>Looks good!</Form.Control.Feedback> */}
             <Form.Control.Feedback type="invalid">{formik.errors[name]}</Form.Control.Feedback>
         </>
     )
 };
 
-const InputForRange = (type = "text", label, name, formik) => {
+const InputForRange = ({ type, label, name, formik }) => {
     return (
         <Form.Group as={Col}>
-            <Form.Label>{label}</Form.Label>
+            <Form.Label className="font-weight-bold">{label}</Form.Label>
             <Field name={name}>
                 {
                     ({
@@ -183,27 +135,88 @@ const InputForRange = (type = "text", label, name, formik) => {
                     }) => (
                         <Form.Control
                             type={type}
-                            isValid={formik.touched[name] && !formik.errors[name]}
+                            // isValid={formik.touched[name] && !formik.errors[name]}
                             isInvalid={formik.touched[name] && !!formik.errors[name]}
                             {...field}
                         />
                     )
                 }
             </Field>
-            <Form.Control.Feedback>Looks good!</Form.Control.Feedback>
+            {/* <Form.Control.Feedback>Looks good!</Form.Control.Feedback> */}
             <Form.Control.Feedback type="invalid">{formik.errors[name]}</Form.Control.Feedback>
         </Form.Group>
     )
 };
 
 
-const RangeInputs = ({ type, formik, from_label, from_name, to_label, to_name }) => {
+const RangeInputs = (
+    {
+        type,
+        formik,
+        from_label,
+        from_name,
+        to_label,
+        to_name,
+        lower,
+        upper,
+        initialStart,
+        initialEnd,
+        sliderToolTipPrefix
+    }
+) => {
     return (
         <Form.Row>
-            {InputForRange(type, from_label, from_name, formik)}
-            {InputForRange(type, to_label, to_name, formik)}
+            <InputForRange
+                type={type}
+                label={from_label}
+                name={from_name}
+                formik={formik}
+            />
+            <InputForRange
+                type={type}
+                label={to_label}
+                name={to_name}
+                formik={formik}
+            />
+            <div className="w-100"></div>
+            <Form.Group className="px-2 w-100">
+                <Slider
+                    lower={lower}
+                    upper={upper}
+                    initialStart={formik.values[from_name] || initialStart}
+                    initialEnd={formik.values[to_name] || initialEnd}
+                    onChange={(vals) => {
+                        const [lower, upper] = vals;
+                        formik.setFieldValue(from_name, lower, false); // false means do not trigger validation
+                        formik.setFieldValue(to_name, upper); // do it now (true is the default)
+                    }}
+                    handlePrefix={sliderToolTipPrefix}
+                />
+            </Form.Group>
         </Form.Row>
     );
+};
+
+
+const SelectMultiple = (props) => {
+    return (
+        <Field name={props.name}>
+            {
+                ({
+                    field,
+                    form: { touched, errors },
+                    meta
+                }) => (
+                    <DropdownMultiselect
+                        selected={props.selected}
+                        options={props.options}
+                        name="listing"
+                        handleOnChange={(val) => props.formik.setFieldValue(props.name, val)}
+                    />
+                )
+            }
+        </Field>
+    )
 };
 
 
@@ -218,33 +231,33 @@ const ProductSearchForm = () => {
                 toPrice: '',
                 startDateRange: '',
                 endDateRange: '',
-                duration: '',
+                duration: ['1d', '2d', '3d', '4d', '5d', '6d', '7d'],
                 listing: ['l', 's']
             }}
             validationSchema={
                 Yup.object().shape({
-                    // fromSquare: Yup.number().min(1).max(1000).nullable(),
-                    // toSquare: (
-                    //     Yup
-                    //         .number()
-                    //         .min(1)
-                    //         .max(1000)
-                    //         .nullable()
-                    //         .when('fromSquare', (fromSquare, schema) => {
-                    //             return (!isNaN(fromSquare)) ? schema.min(fromSquare, 'Cannot be less than fromSquare') : schema.min(1)
-                    //         })
-                    // ),
-                    // fromPrice: Yup.number().min(0, "I'm not that stupid!").max(1000000, "I wish!").nullable(),
-                    // toPrice: (
-                    //     Yup
-                    //         .number()
-                    //         .min(0, "I'm not that stupid!")
-                    //         .max(1000000, "I wish!")
-                    //         .nullable()
-                    //         .when('fromPrice', (fromPrice, schema) => {
-                    //             return (!isNaN(fromPrice)) ? schema.min(fromPrice, 'Cannot be less than fromPrice') : schema.min(0, "I'm not that stupid!")
-                    //         })
-                    // ),
+                    fromSquare: Yup.number().min(1).max(1000).nullable(),
+                    toSquare: (
+                        Yup
+                            .number()
+                            .min(1)
+                            .max(1000)
+                            .nullable()
+                            .when('fromSquare', (fromSquare, schema) => {
+                                return (!isNaN(fromSquare)) ? schema.min(fromSquare, 'Cannot be less than fromSquare') : schema.min(1)
+                            })
+                    ),
+                    fromPrice: Yup.number().min(0, "I'm not that stupid!").max(1000000, "I wish!").nullable(),
+                    toPrice: (
+                        Yup
+                            .number()
+                            .min(0, "I'm not that stupid!")
+                            .max(1000000, "I wish!")
+                            .nullable()
+                            .when('fromPrice', (fromPrice, schema) => {
+                                return (!isNaN(fromPrice)) ? schema.min(fromPrice, 'Cannot be less than fromPrice') : schema.min(0, "I'm not that stupid!")
+                            })
+                    ),
                     // // fromStart: Yup.string().nullable(),
                     // // toStart: (
                     // //     Yup
@@ -263,22 +276,50 @@ const ProductSearchForm = () => {
                     // //             //
                     // //         })
                     // // ),
-                    // duration: Yup.string().nullable().oneOf(["1d", "2d", "3d", "4d", "5d", "6d", "7d"], "Choose a valid duration.  Any day from 1 to 7 days."),
-                    listing: Yup.array().required().of(Yup.string()).test({
-                        name: 'multipleSelect',
-                        test: (vals) => {
-                            console.log(vals);
-                            let error = false;
-                            vals.forEach((v) => {
-                                if(["l", "s"].indexOf(v) == -1){
-                                    error = true;
-                                    return;
-                                }
-                            });
-                            return error == false;
-                        },
-                        message: "Choices are lease or sale"
-                    })
+                    duration: (
+                        Yup.array()
+                            .required()
+                            .of(Yup.string())
+                            .test({
+                                name: 'required',
+                                test: function (vals) {
+                                    if (vals && vals.length) {
+                                        return true;
+                                    }
+                                    return false;
+                                },
+                                message: "You must choose at least one option."
+                            })
+                    ),
+                    listing: (
+                        Yup.array()
+                            .required()
+                            .of(Yup.string())
+                            .test({
+                                name: 'required',
+                                test: function (vals) {
+                                    if (vals && vals.length) {
+                                        return true;
+                                    }
+                                    return false;
+                                },
+                                message: "You must choose at least one option."
+                            })
+                            .test({
+                                name: 'choices',
+                                test: function (vals) {
+                                    let error = false;
+                                    vals.forEach((v) => {
+                                        if (['l', 's'].indexOf(v) == -1) {
+                                            error = true;
+                                            return;
+                                        }
+                                    });
+                                    return error == false;
+                                },
+                                message: "Choices are lease or sale"
+                            })
+                    )
                 })
             }
         >
@@ -288,32 +329,33 @@ const ProductSearchForm = () => {
                     <Container>
                         <Row>
                             <Col>
-                                <Form>
-                                    {
-                                        RangeInputs(
-                                            {
-                                                from_label: "From Square",
-                                                from_name: "fromSquare",
-                                                to_label: "To Square",
-                                                to_name: "toSquare",
-                                                formik,
-                                                type: 'number'
-                                            }
-                                        )
-                                    }
-                                    {
-                                        RangeInputs(
-                                            {
-                                                from_label: "From Price",
-                                                from_name: "fromPrice",
-                                                to_label: "To Price",
-                                                to_name: "toPrice",
-                                                formik,
-                                                type: 'number'
-                                            }
-                                        )
-                                    }
-                                    {/* <DateTimePickerRange
+                                <Form className="mt-5 border p-2 rounded">
+                                    <RangeInputs
+                                        from_label="From Square"
+                                        from_name="fromSquare"
+                                        to_label="To Square"
+                                        to_name="toSquare"
+                                        formik={formik}
+                                        type='number'
+                                        lower={1}
+                                        upper={1000}
+                                        initialStart={1}
+                                        initialEnd={1000}
+                                    />
+                                    <RangeInputs
+                                        from_label="From Price"
+                                        from_name="fromPrice"
+                                        to_label="To Price"
+                                        to_name="toPrice"
+                                        formik={formik}
+                                        type='number'
+                                        lower={0}
+                                        upper={1000000}
+                                        initialStart={0}
+                                        initialEnd={1000000}
+                                        sliderToolTipPrefix="£"
+                                    />
+                                    <DateTimePickerRange
                                         formik={formik}
                                         startDateFieldLabel="From Start Date"
                                         startDateFieldName="fromStartDate"
@@ -326,45 +368,47 @@ const ProductSearchForm = () => {
                                         startDateFieldName="fromEndDate"
                                         endDateFieldLabel="To End Date"
                                         endDateFieldName="toEndDate"
-                                    /> */}
+                                    />
                                     <Form.Row>
                                         <Form.Group as={Col}>
-                                            <Select label="Duration" name="duration" formik={formik}>
-                                                <option value="">---------</option>
-                                                <option value="1d">1 day</option>
-                                                <option value="2d">2 days</option>
-                                                <option value="3d">3 days</option>
-                                                <option value="4d">4 days</option>
-                                                <option value="5d">5 days</option>
-                                                <option value="6d">6 days</option>
-                                                <option value="7d">7 days</option>
-                                            </Select>
+                                            <Form.Label className="font-weight-bold">Duration</Form.Label>
+                                            <SelectMultiple
+                                                name="duration"
+                                                selected={["1d", "2d", "3d", "4d", "5d", "6d", "7d"]}
+                                                options={[
+                                                    { key: "1d", label: "1 day" },
+                                                    { key: "2d", label: "2 days" },
+                                                    { key: "3d", label: "3 days" },
+                                                    { key: "4d", label: "4 days" },
+                                                    { key: "5d", label: "5 days" },
+                                                    { key: "6d", label: "6 days" },
+                                                    { key: "7d", label: "7 days" },
+                                                ]}
+                                                formik={formik}
+                                            />
+                                            {formik.errors.duration && <div className='text-danger small mt-1'>{formik.errors.duration}</div>}
                                         </Form.Group>
                                     </Form.Row>
                                     <Form.Row>
-                                        <Form.Group>
-                                            <Form.Label>Listing</Form.Label>
-                                            <Field name="listing">
-                                                {
-                                                    ({
-                                                        field,
-                                                        form: { touched, errors },
-                                                        meta
-                                                    }) => (
-                                                        <DropdownMultiselect
-                                                            selected={["l", "s"]}
-                                                            options={[{ key: "l", label: "Lease" }, { key: "s", label: "Sale" }]}
-                                                            name="listing"
-                                                            handleOnChange={(val) => formik.setFieldValue('listing', val)}
-                                                        />
-                                                    )
-                                                }
-                                            </Field>
-                                            {/* {formik.errors.listing && <div className="small text-danger mt-1">{formik.errors.listing}</div>} */}
-                                            {formik.values.listing}
-                                            {formik.errors.listing}
+                                        <Form.Group as={Col}>
+                                            <Form.Label className="font-weight-bold">Listing</Form.Label>
+                                            <SelectMultiple
+                                                name="listing"
+                                                selected={['l', 's']}
+                                                options={[{ key: "l", label: "Lease" }, { key: "s", label: "Sale" }]}
+                                                formik={formik}
+                                            />
+                                            {/*
+                                                Implement this when enhancement request has been done -
+                                                https://github.com/kfrancikowski/react-multiselect-dropdown-bootstrap/issues/13
+                                                So we can easily add listing to formik.touched
+
+                                                {formik.values.listing && <div className='text-success small mt-1'>Looks good!</div>} 
+                                            */}
+                                            {formik.errors.listing && <div className='text-danger small mt-1'>{formik.errors.listing}</div>}
                                         </Form.Group>
                                     </Form.Row>
+                                    <Button variant="success" block>Search</Button>{' '}
                                 </Form>
                             </Col>
                         </Row>

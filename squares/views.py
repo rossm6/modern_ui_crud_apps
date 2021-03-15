@@ -21,3 +21,6 @@ class ProductsTableServerSide(TemplateView):
 
 class ProductSearchForm(TemplateView):
     template_name = "products_search_form.html"
+
+class Slider(TemplateView):
+    template_name = "slider.html"

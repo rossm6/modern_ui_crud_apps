@@ -9,6 +9,7 @@ module.exports = {
         './client/components/table_form/index': './client/components/table_form/index.js',
         './client/components/products_server_side_table/index': './client/components/products_server_side_table/index.js',
         './client/components/products_search_form/index': './client/components/products_search_form/index.js',
+        './client/components/slider/index': './client/components/slider/index.js',
     },
     output: {
         filename: '[name].js',  // output bundle file name
@@ -22,12 +23,26 @@ module.exports = {
                 loader: "babel-loader",
                 options: {
                     presets: ["@babel/preset-env", "@babel/preset-react"],
-                }
+                },
             },
             {
                 test: /\.css$/,
                 use: ['style-loader', 'css-loader']
             }
         ]
+    },
+    resolve: {
+        alias: {
+            jquery: (function () {
+                // this is the workaround so we don't get a failed build because it wants jquery
+                // necessary with the introduction of react-bootstrap-slider
+                // https://github.com/brownieboy/react-bootstrap-slider#readme
+                const jQueryAlias = path.join(
+                    __dirname,
+                    "./static/js/stubs/jquery-stub.js"
+                );
+                return jQueryAlias;
+            })()
+        }
     }
 };
