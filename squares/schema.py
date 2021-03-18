@@ -1,8 +1,10 @@
 import json
+from datetime import timedelta
 
 import graphene
-from django.db.models import Case, CharField, Value, When, F
-from django.db.models.functions import Concat, ExtractDay, ExtractMonth, ExtractYear
+from django.db.models import Case, CharField, F, Value, When
+from django.db.models.functions import (Concat, ExtractDay, ExtractMonth,
+                                        ExtractYear)
 from django_filters import FilterSet, OrderingFilter
 from graphene_django import DjangoObjectType
 from graphene_django.filter import DjangoFilterConnectionField
@@ -11,11 +13,10 @@ from graphene_extras.pagination.ui import PaginationConnection
 from squares.models import Product, Square
 from squares.serializers import ProductSerializer
 
-
 """
-query A {
+query A ($formData: ProductNodeInput) {
   viewer {
-    products {
+    products (formData: $formData) {
       edges {
         node {
           square {
@@ -157,11 +158,32 @@ def choices_display(field_name, choices):
     return Case(*whens)
 
 
+class Duration(graphene.Enum):
+    d1 = timedelta(days=1)
+    d2 = timedelta(days=2)
+
+
+class Listing(graphene.Enum):
+    l = "l"
+    s = "s"
+
+class ProductNodeInput(graphene.InputObjectType):
+    from_square = graphene.Int()
+    to_square = graphene.Int()
+    from_price = graphene.Int()
+    to_price = graphene.Int()
+    from_start = graphene.Date()
+    to_start = graphene.Date()
+    from_end = graphene.Date()
+    to_end = graphene.Date()
+    duration = graphene.List(Duration)
+    listing = graphene.List(Listing)
+
 class ViewerNode(graphene.ObjectType):
     class Meta:
         interfaces = (graphene.relay.Node,)
     products = graphene.relay.ConnectionField(
-        PaginateProductConnection, args={'orderBy': graphene.String(), 'searchText': graphene.String()})
+        PaginateProductConnection, args={'orderBy': graphene.String(), 'searchText': graphene.String(), 'formData': ProductNodeInput()})
 
     def resolve_products(root, info, **kwargs):
         """
@@ -181,6 +203,10 @@ class ViewerNode(graphene.ObjectType):
         So the start_ui and end_ui fields are now obsolete in this query.
         I still include them for the sake of learning.
         """
+
+	
+
+
         q = (
             Product
             .objects

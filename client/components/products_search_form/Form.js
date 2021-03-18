@@ -8,8 +8,6 @@ import Col from 'react-bootstrap/Col';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import DatePicker from "react-datepicker";
-// import { parse } from "date-fns/parse"; was going to use this for parsing the datetime string
-// still might need it for the dates
 import DropdownMultiselect from "react-multiselect-dropdown-bootstrap"; // may be better - https://github.com/harshzalavadiya/react-multi-select-component#readme
 import Slider from "./Slider";
 
@@ -20,15 +18,18 @@ import "./style.css";
 
     TODO -
 
-    Change functions to function components i.e. use a props param at least.
+        Rightside Date Pickers go off the page on small screens.
 
-    We could really do with improving the fields.  Take a
-    look at Select for example.  It seems lots of things aren't used
-    in the component.  I WAS CONFUSED ABOUT <Field>.  This is a
-    formik component which makes more sense.
+        Need to make changes to DropdownMultiSelect fork I took.
+            -   enhancement request: onBlur
+            -   bug: add "type"="button" to "SelectAll" button.
+            -   option to specify the prefix for IDs.  At the moment
+                multiple widgets will cause ID not unique error.
 
-    I cannot get the multiselect to validate that at least one is chosen
-    from the array.
+        We could really do with improving the fields.  Take a
+        look at Select for example.  It seems lots of things aren't used
+        in the component.  I WAS CONFUSED ABOUT <Field>.  This is a
+        formik component which makes more sense.
 
 */
 
@@ -220,6 +221,10 @@ const SelectMultiple = (props) => {
 };
 
 
+const formatDate = (date) => {
+    return date.toLocaleDateString('en-GB')
+};
+
 const ProductSearchForm = () => {
 
     return (
@@ -322,100 +327,122 @@ const ProductSearchForm = () => {
                     )
                 })
             }
+            onSubmit={(values, actions) => {
+                console.log("submitting");
+                // we need to conver the date objects before making the API request
+                let dates = { 
+                    fromStartDate: values.fromStartDate,
+                    toStartDate: values.toStartDate,
+                    fromEndDate: values.fromEndDate,
+                    toEndDate: values.toEndDate
+                };
+
+                for(var key in dates){
+                    if(dates[key] instanceof Date){
+                        values[key] = formatDate(dates[key]);
+                    }
+                }
+                console.log("formData for submission", values);        
+
+            }}
         >
             {formik => {
                 console.log("formik", formik);
                 return (
-                    <Container>
-                        <Row>
-                            <Col>
-                                <Form className="mt-5 border p-2 rounded">
-                                    <RangeInputs
-                                        from_label="From Square"
-                                        from_name="fromSquare"
-                                        to_label="To Square"
-                                        to_name="toSquare"
-                                        formik={formik}
-                                        type='number'
-                                        lower={1}
-                                        upper={1000}
-                                        initialStart={1}
-                                        initialEnd={1000}
-                                    />
-                                    <RangeInputs
-                                        from_label="From Price"
-                                        from_name="fromPrice"
-                                        to_label="To Price"
-                                        to_name="toPrice"
-                                        formik={formik}
-                                        type='number'
-                                        lower={0}
-                                        upper={1000000}
-                                        initialStart={0}
-                                        initialEnd={1000000}
-                                        sliderToolTipPrefix="£"
-                                    />
-                                    <DateTimePickerRange
-                                        formik={formik}
-                                        startDateFieldLabel="From Start Date"
-                                        startDateFieldName="fromStartDate"
-                                        endDateFieldName="toStartDate"
-                                        endDateFieldLabel="To Start Date"
-                                    />
-                                    <DateTimePickerRange
-                                        formik={formik}
-                                        startDateFieldLabel="From End Date"
-                                        startDateFieldName="fromEndDate"
-                                        endDateFieldLabel="To End Date"
-                                        endDateFieldName="toEndDate"
-                                    />
-                                    <Form.Row>
-                                        <Form.Group as={Col}>
-                                            <Form.Label className="font-weight-bold">Duration</Form.Label>
-                                            <SelectMultiple
-                                                name="duration"
-                                                selected={["1d", "2d", "3d", "4d", "5d", "6d", "7d"]}
-                                                options={[
-                                                    { key: "1d", label: "1 day" },
-                                                    { key: "2d", label: "2 days" },
-                                                    { key: "3d", label: "3 days" },
-                                                    { key: "4d", label: "4 days" },
-                                                    { key: "5d", label: "5 days" },
-                                                    { key: "6d", label: "6 days" },
-                                                    { key: "7d", label: "7 days" },
-                                                ]}
-                                                formik={formik}
-                                            />
-                                            {formik.errors.duration && <div className='text-danger small mt-1'>{formik.errors.duration}</div>}
-                                        </Form.Group>
-                                    </Form.Row>
-                                    <Form.Row>
-                                        <Form.Group as={Col}>
-                                            <Form.Label className="font-weight-bold">Listing</Form.Label>
-                                            <SelectMultiple
-                                                name="listing"
-                                                selected={['l', 's']}
-                                                options={[{ key: "l", label: "Lease" }, { key: "s", label: "Sale" }]}
-                                                formik={formik}
-                                            />
-                                            {/*
+                    <Row>
+                        <Col>
+                            <Form noValidate onSubmit={formik.handleSubmit} className="mt-5 border p-2 rounded">
+                                <RangeInputs
+                                    from_label="From Square"
+                                    from_name="fromSquare"
+                                    to_label="To Square"
+                                    to_name="toSquare"
+                                    formik={formik}
+                                    type='number'
+                                    lower={1}
+                                    upper={1000}
+                                    initialStart={1}
+                                    initialEnd={1000}
+                                />
+                                <RangeInputs
+                                    from_label="From Price"
+                                    from_name="fromPrice"
+                                    to_label="To Price"
+                                    to_name="toPrice"
+                                    formik={formik}
+                                    type='number'
+                                    lower={0}
+                                    upper={1000000}
+                                    initialStart={0}
+                                    initialEnd={1000000}
+                                    sliderToolTipPrefix="£"
+                                />
+                                <DateTimePickerRange
+                                    formik={formik}
+                                    startDateFieldLabel="From Start Date"
+                                    startDateFieldName="fromStartDate"
+                                    endDateFieldName="toStartDate"
+                                    endDateFieldLabel="To Start Date"
+                                />
+                                <DateTimePickerRange
+                                    formik={formik}
+                                    startDateFieldLabel="From End Date"
+                                    startDateFieldName="fromEndDate"
+                                    endDateFieldLabel="To End Date"
+                                    endDateFieldName="toEndDate"
+                                />
+                                <Form.Row>
+                                    <Form.Group as={Col}>
+                                        <Form.Label className="font-weight-bold">Duration</Form.Label>
+                                        <SelectMultiple
+                                            name="duration"
+                                            selected={["1d", "2d", "3d", "4d", "5d", "6d", "7d"]}
+                                            options={[
+                                                { key: "1d", label: "1 day" },
+                                                { key: "2d", label: "2 days" },
+                                                { key: "3d", label: "3 days" },
+                                                { key: "4d", label: "4 days" },
+                                                { key: "5d", label: "5 days" },
+                                                { key: "6d", label: "6 days" },
+                                                { key: "7d", label: "7 days" },
+                                            ]}
+                                            formik={formik}
+                                        />
+                                        {formik.errors.duration && <div className='text-danger small mt-1'>{formik.errors.duration}</div>}
+                                    </Form.Group>
+                                </Form.Row>
+                                <Form.Row>
+                                    <Form.Group as={Col}>
+                                        <Form.Label className="font-weight-bold">Listing</Form.Label>
+                                        <SelectMultiple
+                                            name="listing"
+                                            selected={['l', 's']}
+                                            options={[{ key: "l", label: "Lease" }, { key: "s", label: "Sale" }]}
+                                            formik={formik}
+                                        />
+                                        {/*
                                                 Implement this when enhancement request has been done -
                                                 https://github.com/kfrancikowski/react-multiselect-dropdown-bootstrap/issues/13
                                                 So we can easily add listing to formik.touched
 
                                                 {formik.values.listing && <div className='text-success small mt-1'>Looks good!</div>} 
                                             */}
-                                            {formik.errors.listing && <div className='text-danger small mt-1'>{formik.errors.listing}</div>}
-                                        </Form.Group>
-                                    </Form.Row>
-                                    <Button variant="success" block>Search</Button>{' '}
-                                </Form>
-                            </Col>
-                        </Row>
-                    </Container>
+                                        {formik.errors.listing && <div className='text-danger small mt-1'>{formik.errors.listing}</div>}
+                                    </Form.Group>
+                                </Form.Row>
+                                <Button
+                                    variant="success"
+                                    block
+                                    type="submit"
+                                >
+                                    Search
+                                </Button>
+                            </Form>
+                        </Col>
+                    </Row>
                 )
             }}
-        </Formik>
+        </Formik >
     )
 };
 
