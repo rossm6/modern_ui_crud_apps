@@ -30,3 +30,8 @@ class ProductSearchForm(forms.Form):
     to_end_date = forms.DateField()
     duration = forms.MultipleChoiceField(choices=Product.durations)
     listing = forms.MultipleChoiceField(choices=Product.listings)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for k, field in self.fields.items():
+            field.required = False

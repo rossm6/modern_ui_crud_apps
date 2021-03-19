@@ -161,11 +161,17 @@ def choices_display(field_name, choices):
 class Duration(graphene.Enum):
     d1 = timedelta(days=1)
     d2 = timedelta(days=2)
+    d3 = timedelta(days=3)
+    d4 = timedelta(days=4)
+    d5 = timedelta(days=5)
+    d6 = timedelta(days=6)
+    d7 = timedelta(days=7)
 
 
 class Listing(graphene.Enum):
     l = "l"
     s = "s"
+
 
 class ProductNodeInput(graphene.InputObjectType):
     from_square = graphene.Int()
@@ -178,6 +184,7 @@ class ProductNodeInput(graphene.InputObjectType):
     to_end = graphene.Date()
     duration = graphene.List(Duration)
     listing = graphene.List(Listing)
+
 
 class ViewerNode(graphene.ObjectType):
     class Meta:
@@ -204,8 +211,8 @@ class ViewerNode(graphene.ObjectType):
         I still include them for the sake of learning.
         """
 
-	
-
+        print("form data")
+        print(kwargs.get('formData'))
 
         q = (
             Product

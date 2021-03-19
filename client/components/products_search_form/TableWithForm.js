@@ -1,17 +1,17 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { gql, useQuery } from "@apollo/client";
-import styled from 'styled-components';
-import ProductSearchForm from "./Form";
 import Table from "./Table";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
+import styled from 'styled-components';
+import ProductSearchForm from "./Form";
 
 export const LOAD_PRODUCTS = gql`
-  query LoadProducts ($first: Int, $after: String, $pageSize: Int, $orderBy: String) {
+  query LoadProducts ($first: Int, $after: String, $pageSize: Int, $orderBy: String, $formData: ProductNodeInput) {
     viewer {
       id
-      products (first: $first, after: $after, orderBy: $orderBy) {
+      products (first: $first, after: $after, orderBy: $orderBy, formData: $formData) {
         edges {
           node {
             square {
@@ -149,14 +149,16 @@ const Styles = styled.div`
 `;
 
 function TableApp() {
-    const pageSize = useRef(10);
+    const pageSizeRef = useRef(10);
+    const orderByRef = useRef([]);
+    const [filters, setFilters] = useState({});
 
     const { loading,
         data,
         fetchMore, }
         = useQuery(LOAD_PRODUCTS, {
             variables: {
-                first: pageSize.current,
+                first: pageSizeRef.current,
                 after: ''
             },
             fetchPolicy: 'cache-first'
@@ -199,7 +201,8 @@ function TableApp() {
                 Header: 'Price',
                 accessor: 'col6'
             }
-        ]
+        ],
+        []
     );
 
     const from_field_to_column = {
@@ -231,7 +234,7 @@ function TableApp() {
 
     const getOrderingQuery = (sortBy) => {
         const ordering = [];
-        sortBy.forEach((s, i) => {
+        sortBy.forEach((s) => {
             const dir = s.desc ? '-' : '';
             ordering.push(`${dir}${orm_ordering[s.id]}`);
         });
@@ -243,26 +246,36 @@ function TableApp() {
         return encodeCursor(offset);
     };
 
-    const fetchData = React.useCallback(({ pageSize: _pageSize, pageIndex, sortBy, searchText }) => {
-        pageSize.current = _pageSize;
-        const orderBy = getOrderingQuery(sortBy);
-        const offset = pageIndex ? pageIndex * _pageSize - 1 : 0;
-        fetchMore({
-            variables: {
-                first: _pageSize,
+    const fetchData = React.useCallback(
+        ({ pageSize, pageIndex, sortBy, filters}) => {
+            console.log("FETCH DATA", pageSize, pageIndex, sortBy, filters);
+            if (filters && Object.keys(filters).length != 0) {
+                pageSize = pageSizeRef.current;
+                sortBy = orderByRef.current;
+            }
+            else {
+                pageSizeRef.current = pageSize;
+                orderByRef.current = sortBy;
+            }
+            const orderBy = getOrderingQuery(sortBy);
+            const offset = pageIndex ? pageIndex * pageSize - 1 : 0;
+            let variables = {
+                first: pageSize,
                 after: getCursorFromOffset(offset),
                 orderBy: orderBy.join(','),
-                searchText: searchText
+            };
+            if (filters) {
+                variables.formData = filters;
             }
-        })
-        // fetchMore still using same original variables -
-        // https://github.com/apollographql/apollo-client/issues/2499
-    }, []);
+            fetchMore({ variables });
+            // fetchMore still using same original variables -
+            // https://github.com/apollographql/apollo-client/issues/2499
+        },[]);
 
     const getTableData = (data) => {
         const col_order = ["square", "start", "duration", "end", "listing", "price"];
         const table_data = [];
-        data?.viewer.products.edges.forEach((edge, i) => {
+        data?.viewer.products.edges.forEach((edge) => {
             const o = {};
             col_order.forEach((key, i) => {
                 o[`col${i + 1}`] = edge.node[from_field_to_column[key] || key];
@@ -283,14 +296,16 @@ function TableApp() {
     const getPageCount = (data) => {
         const total = getTotal(data);
         if (!total) return 0;
-        return total > pageSize.current ? Math.floor(total / pageSize.current) : 1;
+        return total > pageSizeRef.current ? Math.floor(total / pageSizeRef.current) : 1;
     };
 
     return (
         <Container fluid="md">
             <Row>
                 <Col>
-                    <ProductSearchForm />
+                    <ProductSearchForm
+                        setSubmissionData={setFilters}
+                    />
                 </Col>
             </Row>
             <Row>
@@ -303,6 +318,7 @@ function TableApp() {
                             loading={loading}
                             total={getTotal(data)}
                             pageCount={getPageCount(data)}
+                            filters={filters}
                         />
                     </Styles>
                 </Col>

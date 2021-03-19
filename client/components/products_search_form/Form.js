@@ -1,12 +1,11 @@
-import React, { useState, forwardRef } from 'react';
-import { Formik, Field, useFormikContext } from 'formik';
+import React, { forwardRef } from 'react';
+import { Formik, Field } from 'formik';
 import * as Yup from 'yup';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
-import Alert from 'react-bootstrap/Alert';
 import Col from 'react-bootstrap/Col';
-import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
+import PropTypes from 'prop-types';
 import DatePicker from "react-datepicker";
 import DropdownMultiselect from "react-multiselect-dropdown-bootstrap"; // may be better - https://github.com/harshzalavadiya/react-multi-select-component#readme
 import Slider from "./Slider";
@@ -45,8 +44,15 @@ const DateTimePickerRange = (props) => {
     // and blank is fine as well
 
     const CustomInput = forwardRef(({ value, onClick }, ref) => (
-        <Form.Control onClick={onClick} ref={ref} value={value} />
+        <Form.Control onClick={onClick} onChange={() => {}} ref={ref} value={value} />
     ));
+
+    CustomInput.propTypes = {
+        value: PropTypes.string,
+        onClick: PropTypes.func
+    }
+
+    CustomInput.displayName = "DateTimePickerRangeInput";
 
     const onStartDateChange = (fieldValue) => {
         formik.setFieldValue(startDateFieldName, fieldValue);
@@ -95,33 +101,15 @@ const DateTimePickerRange = (props) => {
     )
 };
 
-const Select = ({ label, name, formik, children }) => {
-    return (
-        <>
-            <Form.Label>{label}</Form.Label>
-            <Field name={name}>
-                {
-                    ({
-                        field,
-                        form: { touched, errors },
-                        meta
-                    }) => (
-                        <Form.Control
-                            as="select"
-                            // isValid={formik.touched[name] && !formik.errors[name]}
-                            isInvalid={formik.touched[name] && !!formik.errors[name]}
-                            {...field}
-                        >
-                            {children}
-                        </Form.Control>
-                    )
-                }
-            </Field>
-            {/* <Form.Control.Feedback>Looks good!</Form.Control.Feedback> */}
-            <Form.Control.Feedback type="invalid">{formik.errors[name]}</Form.Control.Feedback>
-        </>
-    )
+
+DateTimePickerRange.propTypes = {
+    formik: PropTypes.object,
+    startDateFieldLabel: PropTypes.string,
+    startDateFieldName: PropTypes.string,
+    endDateFieldLabel: PropTypes.string,
+    endDateFieldName: PropTypes.string
 };
+
 
 const InputForRange = ({ type, label, name, formik }) => {
     return (
@@ -129,11 +117,7 @@ const InputForRange = ({ type, label, name, formik }) => {
             <Form.Label className="font-weight-bold">{label}</Form.Label>
             <Field name={name}>
                 {
-                    ({
-                        field,
-                        form: { touched, errors },
-                        meta
-                    }) => (
+                    ({ field }) => (
                         <Form.Control
                             type={type}
                             // isValid={formik.touched[name] && !formik.errors[name]}
@@ -147,6 +131,14 @@ const InputForRange = ({ type, label, name, formik }) => {
             <Form.Control.Feedback type="invalid">{formik.errors[name]}</Form.Control.Feedback>
         </Form.Group>
     )
+};
+
+
+InputForRange.propTypes = {
+    type: PropTypes.string,
+    label: PropTypes.string,
+    name: PropTypes.string,
+    formik: PropTypes.object
 };
 
 
@@ -199,15 +191,26 @@ const RangeInputs = (
 };
 
 
+RangeInputs.propTypes = {
+    type: PropTypes.string,
+    formik: PropTypes.object,
+    from_label: PropTypes.string,
+    from_name: PropTypes.string,
+    to_label: PropTypes.string,
+    to_name: PropTypes.string,
+    lower: PropTypes.number,
+    upper: PropTypes.number,
+    initialStart: PropTypes.number,
+    initialEnd: PropTypes.number,
+    sliderToolTipPrefix: PropTypes.string,
+};
+
+
 const SelectMultiple = (props) => {
     return (
         <Field name={props.name}>
             {
-                ({
-                    field,
-                    form: { touched, errors },
-                    meta
-                }) => (
+                () => (
                     <DropdownMultiselect
                         selected={props.selected}
                         options={props.options}
@@ -220,12 +223,18 @@ const SelectMultiple = (props) => {
     )
 };
 
+SelectMultiple.propTypes = {
+    selected: PropTypes.array,
+    name: PropTypes.string,
+    options: PropTypes.array,
+    formik: PropTypes.object,
+};
 
 const formatDate = (date) => {
     return date.toLocaleDateString('en-GB')
 };
 
-const ProductSearchForm = () => {
+const ProductSearchForm = ({ setSubmissionData }) => {
 
     return (
         <Formik
@@ -236,7 +245,15 @@ const ProductSearchForm = () => {
                 toPrice: '',
                 startDateRange: '',
                 endDateRange: '',
-                duration: ['1d', '2d', '3d', '4d', '5d', '6d', '7d'],
+                duration: [
+                    'd1',
+                    'd2',
+                    'd3',
+                    'd4',
+                    'd5',
+                    'd6',
+                    'd7'
+                ],
                 listing: ['l', 's']
             }}
             validationSchema={
@@ -327,27 +344,31 @@ const ProductSearchForm = () => {
                     )
                 })
             }
-            onSubmit={(values, actions) => {
-                console.log("submitting");
+            onSubmit={(values) => {
                 // we need to conver the date objects before making the API request
-                let dates = { 
+                let dates = {
                     fromStartDate: values.fromStartDate,
                     toStartDate: values.toStartDate,
                     fromEndDate: values.fromEndDate,
                     toEndDate: values.toEndDate
                 };
-
-                for(var key in dates){
-                    if(dates[key] instanceof Date){
+                for (var key in dates) {
+                    if (dates[key] instanceof Date) {
                         values[key] = formatDate(dates[key]);
                     }
                 }
-                console.log("formData for submission", values);        
-
+                // "" is a default for all fields
+                // do not send these field values to the server
+                var submissionValues = {};
+                for (key in values) {
+                    if (values[key]) {
+                        submissionValues[key] = values[key];
+                    }
+                }
+                setSubmissionData(submissionValues);
             }}
         >
             {formik => {
-                console.log("formik", formik);
                 return (
                     <Row>
                         <Col>
@@ -396,15 +417,23 @@ const ProductSearchForm = () => {
                                         <Form.Label className="font-weight-bold">Duration</Form.Label>
                                         <SelectMultiple
                                             name="duration"
-                                            selected={["1d", "2d", "3d", "4d", "5d", "6d", "7d"]}
+                                            selected={[
+                                                'd1',
+                                                'd2',
+                                                'd3',
+                                                'd4',
+                                                'd5',
+                                                'd6',
+                                                'd7'
+                                            ]}
                                             options={[
-                                                { key: "1d", label: "1 day" },
-                                                { key: "2d", label: "2 days" },
-                                                { key: "3d", label: "3 days" },
-                                                { key: "4d", label: "4 days" },
-                                                { key: "5d", label: "5 days" },
-                                                { key: "6d", label: "6 days" },
-                                                { key: "7d", label: "7 days" },
+                                                { key: "d1", label: "1 day" },
+                                                { key: "d2", label: "2 days" },
+                                                { key: "d3", label: "3 days" },
+                                                { key: "d4", label: "4 days" },
+                                                { key: "d5", label: "5 days" },
+                                                { key: "d6", label: "6 days" },
+                                                { key: "d7", label: "7 days" },
                                             ]}
                                             formik={formik}
                                         />
@@ -444,6 +473,10 @@ const ProductSearchForm = () => {
             }}
         </Formik >
     )
+};
+
+ProductSearchForm.propTypes = {
+    setSubmissionData: PropTypes.func
 };
 
 export default ProductSearchForm;

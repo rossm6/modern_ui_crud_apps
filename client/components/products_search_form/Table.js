@@ -1,19 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useTable, useSortBy, usePagination } from "react-table";
 import Pagination from "react-bootstrap/Pagination";
 import Form from "react-bootstrap/Form";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
+import isEqual from "lodash.isequal";
+import PropTypes from 'prop-types';
 
 function Table({
     columns,
     data,
-    onSort,
     fetchData,
     loading,
     pageCount: controlledPageCount,
-    total
+    total,
+    filters
 }) {
+    const tableFilters = useRef({});
+    const resetFilters = useRef(false);
+
+    if(!isEqual(tableFilters.current, filters)){
+        console.log("d1");
+        console.log(tableFilters.current);
+        console.log(filters);
+        console.log("d2");
+        tableFilters.current = filters;
+        resetFilters.current = true;
+    }
+    else{
+        resetFilters.current = false;
+    }
+
     const {
         getTableProps,
         getTableBodyProps,
@@ -22,7 +39,6 @@ function Table({
         page,
         canPreviousPage,
         canNextPage,
-        pageOptions,
         gotoPage,
         nextPage,
         previousPage,
@@ -36,24 +52,43 @@ function Table({
             manualSortBy: true,
             autoResetPage: false,
             autoResetSortBy: false,
-            pageCount: controlledPageCount
+            pageCount: controlledPageCount,
+            useControlledState: state => {
+                return React.useMemo(function(){
+                    let controlledPageIndex;
+                    if(resetFilters.current){
+                        controlledPageIndex = 0;
+                    }
+                    else{
+                        controlledPageIndex = state.pageIndex;
+                    }
+                    return {
+                        ...state,
+                        pageIndex: controlledPageIndex
+                    }
+                },
+                [state, resetFilters.current]
+                )
+            }
         },
         useSortBy,
         usePagination
     );
-    const [searchText, setSearchText] = useState('');
+
+    console.log("page index", pageIndex);
 
     useEffect(() => {
         if (!loading) {
-            fetchData({ pageIndex, pageSize, sortBy, searchText });
+            console.log("use effect fetch data");
+            fetchData({ pageIndex, pageSize, sortBy, filters: tableFilters.current })
         }
-    }, [sortBy, fetchData, pageIndex, pageSize, searchText]);
+    }, [loading, fetchData, pageIndex, pageSize, sortBy, tableFilters.current]);
 
     const getPageButtons = (currentPageIndex, lastPageIndex, gotoPage) => {
         let pageIndexes = [];
         pageIndexes.push(0);
         const around = [-2, -1, 0, 1, 2];
-        around.forEach((m, i) => {
+        around.forEach((m) => {
             const pageIndex = currentPageIndex + m;
             if (pageIndex >= 0 && pageIndex <= lastPageIndex) {
                 pageIndexes.push(pageIndex);
@@ -71,7 +106,6 @@ function Table({
             };
         };
         uniquePageIndexes.sort((a, b) => a - b);
-        console.log(uniquePageIndexes);
         if (uniquePageIndexes.length > 3) {
             // -1 has special meaning - will create an ellipsis button
             uniquePageIndexes.splice(1, 0, -1);
@@ -84,26 +118,22 @@ function Table({
                 b = <Pagination.Ellipsis key={index} />;
             }
             else {
-                b = <Pagination.Item 
-                        className={
-                            pageIndex == currentPageIndex
+                b = <Pagination.Item
+                    className={
+                        pageIndex == currentPageIndex
                             || pageIndex == 0
                             || pageIndex == lastPageIndex
-                            ? null 
+                            ? null
                             : "d-none d-md-block"
-                        } 
-                        key={index} active={pageIndex == currentPageIndex} 
-                        onClick={onClickHandler(pageIndex, currentPageIndex)}>
-                        {pageIndex + 1}
-                    </Pagination.Item>;
+                    }
+                    key={index} active={pageIndex == currentPageIndex}
+                    onClick={onClickHandler(pageIndex, currentPageIndex)}>
+                    {pageIndex + 1}
+                </Pagination.Item>;
             }
             buttons.push(b);
         });
         return buttons;
-    };
-
-    const searchSquares = (text) => {
-        setSearchText(text);
     };
 
     // alert("ALERT - " + controlledPageCount);
@@ -152,7 +182,7 @@ function Table({
                     ))}
                 </thead>
                 <tbody {...getTableBodyProps()}>
-                    {page.map((row, i) => {
+                    {page.map((row) => {
                         prepareRow(row);
                         return (
                             <tr {...row.getRowProps()}>
@@ -187,5 +217,15 @@ function Table({
         </>
     );
 }
+
+Table.propTypes = {
+    columns: PropTypes.array,
+    data: PropTypes.array,
+    fetchData: PropTypes.func,
+    loading: PropTypes.bool, 
+    pageCount: PropTypes.number,
+    total: PropTypes.number,
+    filters: PropTypes.object
+};
 
 export default Table;
