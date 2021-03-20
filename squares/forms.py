@@ -13,11 +13,17 @@ d = {
     'to_start_date': '02/10/1991', 
     'from_end_date': '02/05/15', 
     'to_end_date': '02/05/16', 
-    'duration': ['1 day, 0:00:00'],
+    'duration': [number_of_seconds],
     'listing': ['l']
 }
 
 """
+
+duration_choices = []
+for td, label in Product.durations:
+    duration_choices.append(
+        (td.total_seconds(), label)
+    )
 
 class ProductSearchForm(forms.Form):
     from_square = forms.IntegerField()
@@ -28,7 +34,7 @@ class ProductSearchForm(forms.Form):
     to_start_date = forms.DateField()
     from_end_date = forms.DateField()
     to_end_date = forms.DateField()
-    duration = forms.MultipleChoiceField(choices=Product.durations)
+    duration = forms.MultipleChoiceField(choices=duration_choices)
     listing = forms.MultipleChoiceField(choices=Product.listings)
 
     def __init__(self, *args, **kwargs):

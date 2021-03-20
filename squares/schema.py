@@ -1,5 +1,5 @@
 import json
-from datetime import timedelta
+from datetime import date, timedelta
 
 import graphene
 from django.db.models import Case, CharField, F, Value, When
@@ -10,6 +10,7 @@ from graphene_django import DjangoObjectType
 from graphene_django.filter import DjangoFilterConnectionField
 from graphene_extras.pagination.ui import PaginationConnection
 
+from squares.forms import ProductSearchForm
 from squares.models import Product, Square
 from squares.serializers import ProductSerializer
 
@@ -159,13 +160,13 @@ def choices_display(field_name, choices):
 
 
 class Duration(graphene.Enum):
-    d1 = timedelta(days=1)
-    d2 = timedelta(days=2)
-    d3 = timedelta(days=3)
-    d4 = timedelta(days=4)
-    d5 = timedelta(days=5)
-    d6 = timedelta(days=6)
-    d7 = timedelta(days=7)
+    d1 = timedelta(days=1).total_seconds()
+    d2 = timedelta(days=2).total_seconds()
+    d3 = timedelta(days=3).total_seconds()
+    d4 = timedelta(days=4).total_seconds()
+    d5 = timedelta(days=5).total_seconds()
+    d6 = timedelta(days=6).total_seconds()
+    d7 = timedelta(days=7).total_seconds()
 
 
 class Listing(graphene.Enum):
@@ -217,8 +218,8 @@ class ViewerNode(graphene.ObjectType):
         I still include them for the sake of learning.
         """
 
-        print("form data")
-        print(kwargs.get('formData'))
+        if formData := kwargs.get('formData'):
+            form = ProductSearchForm(data=formData)
 
         q = (
             Product
@@ -247,8 +248,47 @@ class ViewerNode(graphene.ObjectType):
             )
             .annotate(duration_ui=choices_display('duration', Product.durations))
         )
-        if searchText := kwargs.get('searchText'):
-            q = q.filter(listing=searchText)
+
+        if formData := kwargs.get('formData'):
+            form = ProductSearchForm(data=formData)
+            if form.is_valid():
+                default_search = {
+                    "from_square": 1,
+                    "to_square": 1000,
+                    "from_price": 0,
+                    "to_price": 1000000,
+                    "from_start_date": date(1900, 1, 1),
+                    "to_start_date": date(2030, 1, 1),
+                    "from_end_date": date(1900, 1, 1),
+                    "to_end_date": date(2030, 1, 1),
+                    "duration": [str(d[0]) for d in Product.durations],
+                    "listing": [l[0] for l in Product.listings]
+                }
+                cleaned_data = {k: v for k, v in form.cleaned_data.items() if v}
+                filters = {}
+                filters.update(default_search)
+                filters.update(cleaned_data)
+
+                duration = []
+                for d in filters["duration"]:
+                    duration.append(timedelta(seconds=float(d)))
+                filters["duration"] = duration
+
+                q = (
+                    q
+                    .filter(square_id__gte=filters["from_square"])
+                    .filter(square_id__lte=filters["to_square"])
+                    .filter(price__gte=filters["from_price"])
+                    .filter(price__lte=filters["to_price"])
+                    .filter(start__gte=filters["from_start_date"])
+                    .filter(start__lte=filters["to_start_date"])
+                    .filter(end__gte=filters["from_end_date"])
+                    .filter(end__lte=filters["to_end_date"])
+                    .filter(duration__in=filters["duration"])
+                    .filter(listing__in=filters["listing"])
+                )
+            else:
+                q = q.none()
         q = order_queryset(q, **kwargs)
         return q
 

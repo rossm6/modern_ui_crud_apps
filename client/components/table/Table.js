@@ -2,6 +2,27 @@ import React, { useState, useEffect, useRef } from "react";
 import { Form, Pagination, Row, Col } from "react-bootstrap";
 import PropTypes from 'prop-types';
 
+
+/* 
+
+    I think it would be much nicer if we just had one state object
+    for ordering, data and pagination.  This makes the component so much
+    easier to write.
+
+
+        App
+
+    Form    Table
+
+    Form sets state on app with formData.
+    This causes a re-render.
+    FormData is passed to Table.  It checks if it is different
+    to last formData (ref).  If so it updates it's own state.
+    Question - Does this second update abort the first?
+    I'm hoping it does.
+
+*/
+
 const Table = ({
     fetchData,
     orderBy,
@@ -9,7 +30,8 @@ const Table = ({
     data,
     usePagination,
     totalPages,
-    totalCount
+    totalCount,
+    form
 }) => {
 
     const ordPrefRef = useRef(columns.length);
@@ -195,13 +217,24 @@ const Table = ({
         [getFieldNameForOrdering]
     );
 
+    const filters = useRef({});
+
+    const applyFilters = (formData) => {
+        filters.current = formData;
+        setPagination({
+            ...pagination,
+            pageIndex: 0
+        });
+    };
+
     useEffect(() => {
         fetchData({
             orderBy: getOrderByForServer(orderByState),
             pageSize: pagination.pageSize,
-            pageIndex: pagination.pageIndex
+            pageIndex: pagination.pageIndex,
+            formData: filters.current
         })
-    }, [fetchData, orderByState, getOrderByForServer, pagination]);
+    }, [fetchData, orderByState, getOrderByForServer, pagination, filters]);
     // component state variables should change ref when updating using the setter (they must do)
     // good article - https://www.benmvp.com/blog/object-array-dependencies-react-useEffect-hook/
 
@@ -303,9 +336,15 @@ const Table = ({
         canNextPage = paginationInfo.pageIndex < totalPages - 1;
     }
 
+    let CustomForm;
+    if(form){
+        CustomForm = form;
+    }
+
     return (
         <div>
-            {paginationInfo && <div className="mb-3">
+            {CustomForm && <div>{<CustomForm setSubmissionData={applyFilters}/>}</div>}
+            {paginationInfo && <div className="my-3">
                 <Form.Control
                     className="w-auto"
                     as="select"
@@ -332,7 +371,7 @@ const Table = ({
                                 onClick={isOrdable(colIndex) ? getOrdableCallback(colIndex) : undefined}
                                 className={isOrdable(colIndex) ? "cursor-pointer" : undefined}
                             >
-                                <span>
+                                <span className="th-span">
                                     {column.label}
                                     {isOrdable(colIndex) && <span>{getOrderDir(colIndex)}</span>}
                                 </span>
@@ -344,13 +383,13 @@ const Table = ({
                     {rows.map((row, i) => (
                         <tr key={i}>
                             {row.map((cellValue, i) => (
-                                <td key={i}>{cellValue}</td>
+                                <td data-label={columns[i].label.toLowerCase()} key={i}>{cellValue}</td>
                             ))}
                         </tr>
                     ))}
                 </tbody>
             </table>
-            <Row>
+            <Row className="mt-3">
                 {totalCount && <Col>
                     <span>Showing {rows.length} of {totalCount}</span>
                 </Col>}
@@ -391,7 +430,8 @@ Table.propTypes = {
     totalPages: PropTypes.number,
     orderBy: PropTypes.array,
     usePagination: PropTypes.bool,
-    totalCount: PropTypes.number
+    totalCount: PropTypes.number,
+    filters: PropTypes.object
 };
 
 export default Table;

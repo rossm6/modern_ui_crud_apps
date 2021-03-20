@@ -1,13 +1,15 @@
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { useLazyQuery, gql } from "@apollo/client";
 import Table from "./Table";
-import { Container } from "react-bootstrap";
+import { Container, Row, Col } from "react-bootstrap";
+import ProductSearchForm from "./Form";
+import styled from 'styled-components';
 
 const LOAD_PRODUCTS = gql`
-  query LoadProducts ($first: Int, $after: String, $pageSize: Int, $orderBy: String) {
+  query LoadProducts ($first: Int, $after: String, $pageSize: Int, $orderBy: String, $formData: ProductNodeInput) {
     viewer {
       id
-      products (first: $first, after: $after, orderBy: $orderBy) {
+      products (first: $first, after: $after, orderBy: $orderBy, formData: $formData) {
         edges {
           node {
             square {
@@ -50,8 +52,101 @@ const LOAD_PRODUCTS = gql`
   }
 `;
 
-const App = () => {
+const Styles = styled.div`
+    table {
+        border: 1px solid #ccc;
+        border-collapse: collapse;
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        table-layout: fixed;
+    }
 
+    table caption {
+        font-size: 1.5em;
+        margin: .5em 0 .75em;
+    }
+
+    table tr {
+        border: 1px solid #ddd;
+        padding: .35em;
+    }
+
+    table th,
+    table td {
+        padding: .625em;
+        text-align: center;
+    }
+
+    table th {
+        font-size: .85em;
+        letter-spacing: .1em;
+        text-transform: uppercase;
+    }
+
+    @media screen and (max-width: 575px) {
+        table {
+            border: 0;
+        }
+
+        table thead tr {
+            border: none;
+        }
+
+        table th {
+            border: none;
+            padding: 0;
+            margin-top: 2px;
+        }
+
+        th span.th-span {
+            background-color: #007bff;
+            color: white;
+            display: block;
+            border-radius: 5px;
+            padding: 3px;
+            color: white;
+        }
+
+        table th {
+            display: block;
+        }
+
+        table caption {
+            font-size: 1.3em;
+        }
+
+        table tr {
+            display: block;
+            margin-bottom: .625em;
+        }
+
+        table td {
+            border-top: none;
+            border-bottom: 1px solid #ddd;
+            display: block;
+            font-size: .8em;
+            text-align: right;
+        }
+
+        table td::before {
+            /*
+            * aria-label has no advantage, it won't be read inside a table
+            content: attr(aria-label);
+            */
+            content: attr(data-label);
+            float: left;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        table td:last-child {
+            border-bottom: 0;
+        }
+    }
+`;
+
+const App = () => {
   const [fetchInitialData, { loading, data, fetchMore, called }] = useLazyQuery(LOAD_PRODUCTS, { fetchPolicy: 'no-cache' });
   // I noticed that getData calls are rendering the Table multiple times... not sure if this is correct or not
   // At least we don't have multiple network calls
@@ -87,7 +182,7 @@ const App = () => {
     return queryData?.viewer.products.pages.last.pageNumber;
   };
 
-  const _getData = ({ pageSize, pageIndex, orderBy, }) => {
+  const _getData = ({ pageSize, pageIndex, orderBy, formData }) => {
 
     const encodeCursor = (offset) => {
       // server implementation is -
@@ -120,15 +215,22 @@ const App = () => {
     const offset = pageIndex ? pageIndex * pageSize - 1 : 0;
     const cursor = getCursorFromOffset(offset);
 
+    let variables = {
+      first: pageSize,
+      after: cursor,
+      orderBy: orderByAsStr,
+      pageSize,
+    }
+
+    if (formData) {
+      variables = {
+        ...variables,
+        formData
+      };
+    }
+
     if (!called) {
-      fetchInitialData({
-        variables: {
-          first: pageSize,
-          after: cursor,
-          orderBy: orderByAsStr,
-          pageSize,
-        }
-      })
+      fetchInitialData({ variables })
     }
     else {
       fetchMore({
@@ -143,7 +245,6 @@ const App = () => {
   };
 
   const getData = useRef((o) => { return _getData(o); });
-
 
   /*
     orderBy specifies at least the columns which can be ordered
@@ -179,19 +280,22 @@ const App = () => {
 
   return (
     <Container>
-      <Table
-        loading={loading}
-        fetchData={getData.current}
-        data={getProducts(data)}
-        columns={columns}
-        orderBy={[
-          { "col": 0, "dir": "asc", order: 0 },
-          { "col": 5, "dir": "asc", order: 1 },
-        ]}
-        usePagination={true}
-        totalPages={getTotalPages(data)}
-        totalCount={getTotalCount(data)}
-      />
+      <Styles>
+        <Table
+          loading={loading}
+          fetchData={getData.current}
+          data={getProducts(data)}
+          columns={columns}
+          orderBy={[
+            { "col": 0, "dir": "asc", order: 0 },
+            { "col": 5, "dir": "asc", order: 1 },
+          ]}
+          usePagination={true}
+          totalPages={getTotalPages(data)}
+          totalCount={getTotalCount(data)}
+          form={ProductSearchForm}
+        />
+      </Styles>
     </Container>
   )
 
