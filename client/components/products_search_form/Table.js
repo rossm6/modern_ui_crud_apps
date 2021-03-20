@@ -94,7 +94,7 @@ function Table({
                 pageIndexes.push(pageIndex);
             }
         });
-        if (lastPageIndex > 0) {
+        if (lastPageIndex > 0) {    
             pageIndexes.push(lastPageIndex);
         }
         // remove duplicate indexes

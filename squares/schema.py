@@ -190,7 +190,13 @@ class ViewerNode(graphene.ObjectType):
     class Meta:
         interfaces = (graphene.relay.Node,)
     products = graphene.relay.ConnectionField(
-        PaginateProductConnection, args={'orderBy': graphene.String(), 'searchText': graphene.String(), 'formData': ProductNodeInput()})
+        PaginateProductConnection,
+        args={
+            'orderBy': graphene.String(),
+            'searchText': graphene.String(),
+            'formData': ProductNodeInput(),
+        }
+    )
 
     def resolve_products(root, info, **kwargs):
         """
