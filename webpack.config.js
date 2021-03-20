@@ -10,6 +10,7 @@ module.exports = {
         './client/components/products_server_side_table/index': './client/components/products_server_side_table/index.js',
         './client/components/products_search_form/index': './client/components/products_search_form/index.js',
         './client/components/slider/index': './client/components/slider/index.js',
+        './client/components/table/index': './client/components/table/index.js',
     },
     output: {
         filename: '[name].js',  // output bundle file name

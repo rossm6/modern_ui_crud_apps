@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block style %}
+<style>
+    .cursor-pointer{
+        cursor: pointer;
+    }
+</style>
+{% endblock style %}
+{% block js %}
+<script src="{% static 'client/components/table/index.js' %}"></script>
+{% endblock js %}

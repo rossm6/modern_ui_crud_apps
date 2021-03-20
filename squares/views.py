@@ -24,3 +24,6 @@ class ProductSearchForm(TemplateView):
 
 class Slider(TemplateView):
     template_name = "slider.html"
+
+class MyTable(TemplateView):
+    template_name = "my_table.html"
