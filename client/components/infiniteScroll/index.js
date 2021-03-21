@@ -19,6 +19,30 @@ function default_squares() {
   }
 }
 
+
+const SQUARES_LIST_QUERY = gql`
+  query LOAD_SQUARES ($first: Int, $after: String) {
+    viewer {
+      id
+      squares(first: $first, after: $after) {
+        edges {
+          node {
+            pk
+            id
+          }
+          cursor
+        }
+        pageInfo {
+          hasNextPage
+          hasPreviousPage
+          startCursor
+          endCursor
+        }
+      }
+    }
+  }
+`;
+
 const client = new ApolloClient({
   uri: "http://localhost:8000/graphql",
   cache: new InMemoryCache({
@@ -45,67 +69,76 @@ const client = new ApolloClient({
                 ]
               }
             },
-          },
-          read(existing) {
-            if (!existing) return;
-            let edges = [];
-            let existingEdges = existing.edges.slice(0);
-            existingEdges.sort((a, b) => a.node.pk - b.node.pk); // CRUCIAL ORDERED BY ASC PK
-            if (existingEdges.length) {
-              if (+existingEdges[0].node.pk != 1) {
+            read(existing, { readField, cache }) {
+              console.log("cache", cache);
+              if (!existing) return;
+              let edges = [];
+              let existingEdges = existing.edges.slice(0);
+              existingEdges.sort((edge1, edge2) => {
+                const pk1 = readField("pk", edge1.node);
+                const pk2 = readField("pk", edge2.node);
+                return +pk1 - +pk2;
+              }); // CRUCIAL ORDERED BY ASC PK
+              const firstNodePk = readField("pk", existingEdges[0].node);
+              if (+firstNodePk != 1) {
                 return; // nothing to show
               }
               edges.push(existingEdges[0])
-            }
-            // We don't have to worry which endCursor is found below
-            // because partial updates are not possible.  So
-            // end cursor must be a legitimate end cursor
-            // i.e. the last index of a page
-            // remember data set here being infinitely scrolled is a fixed data set
-            for (var i = 1; i < existingEdges.length; i++) {
-              if (+existingEdges[i].pk == +existingEdges[i + 1].pk) {
-                edges.push(existingEdges[i]);
+              // We don't have to worry which endCursor is found below
+              // because partial updates are not possible.  So
+              // end cursor must be a legitimate end cursor
+              // i.e. the last index of a page
+              // remember data set here being infinitely scrolled is a fixed data set
+              for (var i = 1; i < existingEdges.length; i++) {
+                let node1 = existingEdges[i-1].node;
+                let node2 = existingEdges[i].node;
+                let pk1 = readField('pk', node1);
+                let pk2 = readField('pk', node2);
+                if (+pk1 + 1 == +pk2) {
+                  edges.push(existingEdges[i]);
+                }
+                else {
+                  break;
+                }
               }
-              else {
-                break;
+              let pageInfo = {
+                endCursor: edges[edges.length - 1].cursor,
+                hasPreviousPage: false,
+                hasNextPage: true,
+                startCursor: "",
+                "__typename": "PageInfo"
+              };
+              let oo = {
+                edges,
+                pageInfo
               }
+              const edgesWithNodes = [];
+              oo.edges.forEach((edge) => {
+                const pk = readField('pk', edge.node);
+                const id = readField('id', edge.node);
+                const actualNode = {
+                  "__typename": "SquareNode",
+                  pk,
+                  id
+                };
+                const newEdge = {
+                  "__typename": "SquareNodeEdge",
+                  cursor: edge.cursor,
+                  node: actualNode
+                };
+                edgesWithNodes.push(newEdge);
+              });
+              oo.edges = edgesWithNodes;
+              // we need to replace the node refs with the real fields p
+              return oo;
             }
-            let pageInfo = {
-              endCursor: edges[edges.length - 1].cursor
-            };
-            return {
-              edges,
-              pageInfo
-            }
-          }
+          },
         }
       }
     }
   })
 });
 
-const SQUARES_LIST_QUERY = gql`
-  query LOAD_SQUARES ($first: Int, $after: String) {
-    viewer {
-      id
-      squares(first: $first, after: $after) {
-        edges {
-          node {
-            pk
-            id
-          }
-          cursor
-        }
-        pageInfo {
-          hasNextPage
-          hasPreviousPage
-          startCursor
-          endCursor
-        }
-      }
-    }
-  }
-`;
 
 ReactDOM.render(
   <ApolloProvider client={client}>
