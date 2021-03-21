@@ -27,3 +27,7 @@ class Slider(TemplateView):
 
 class MyTable(TemplateView):
     template_name = "my_table.html"
+
+
+class InfiniteScroll(TemplateView):
+    template_name = "infinite_scroll.html"

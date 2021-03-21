@@ -11,6 +11,7 @@ module.exports = {
         './client/components/products_search_form/index': './client/components/products_search_form/index.js',
         './client/components/slider/index': './client/components/slider/index.js',
         './client/components/table/index': './client/components/table/index.js',
+        './client/components/infiniteScroll/index': './client/components/infiniteScroll/index.js',
     },
     output: {
         filename: '[name].js',  // output bundle file name
