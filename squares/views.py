@@ -14,10 +14,8 @@ class ProductsView(TemplateView):
         print(ctx["products"])
         return ctx
 
-
 class ProductsTableServerSide(TemplateView):
     template_name = "products_table_server_side.html"
-
 
 class ProductSearchForm(TemplateView):
     template_name = "products_search_form.html"
@@ -27,7 +25,6 @@ class Slider(TemplateView):
 
 class MyTable(TemplateView):
     template_name = "my_table.html"
-
 
 class InfiniteScroll(TemplateView):
     template_name = "infinite_scroll.html"

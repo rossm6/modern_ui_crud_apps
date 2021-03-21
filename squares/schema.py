@@ -59,11 +59,19 @@ class ProductConnection(graphene.relay.Connection):
     id = graphene.GlobalID()
 
 
+
+class SquareFilter(FilterSet):
+    class Meta:
+        model = Square
+        fields = ('ad_url',)
+
+
 class SquareNode(DjangoObjectType):
     class Meta:
         model = Square
         fields = ('ad_url',)
         interfaces = (graphene.relay.Node,)
+        filterset_class = SquareFilter
     pk = graphene.ID(source='pk', required=True)
 
 
@@ -198,6 +206,7 @@ class ViewerNode(graphene.ObjectType):
             'formData': ProductNodeInput(),
         }
     )
+    squares = DjangoFilterConnectionField(SquareNode)
 
     def resolve_products(root, info, **kwargs):
         """
