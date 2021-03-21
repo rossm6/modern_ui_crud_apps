@@ -1,27 +1,12 @@
 import React, { useLayoutEffect, useRef, useState } from "react";
 import { useQuery } from "@apollo/client";
 import debounce from "lodash.debounce";
-
-
-const useWindowSize = () => {
-    const [size, setSize] = useState([0, 0]);
-    useLayoutEffect(() => {
-        const updateSize = () => {
-            setSize([window.innerWidth, window.innerHeight]);
-        };
-        window.addEventListener('resize', updateSize);
-        updateSize();
-        return () => {
-            window.removeEventListener('resize', updateSize);
-        }
-    }, []);
-    return size;
-};
-
+import {useWindowSize} from "./Hooks";
 
 const InfiniteScroll = ({ query, children, pageSize }) => {
     // Sources - 
     // for cloning  - https://stackoverflow.com/a/35102287
+
     const [width, height] = useWindowSize();
     const { loading, data, fetchMore, error } = useQuery(query, { variables: { first: pageSize } });
 

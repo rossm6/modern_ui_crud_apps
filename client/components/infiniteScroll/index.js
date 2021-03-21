@@ -7,6 +7,18 @@ import SquaresList from "./SquaresList";
 // Importing the Bootstrap CSS
 import 'bootstrap/dist/css/bootstrap.min.css';
 
+function default_squares() {
+  return {
+    pageInfo: {
+      hasPreviousPage: false,
+      hasNextPage: false,
+      startCursor: "",
+      endCursor: ""
+    },
+    edges: []
+  }
+}
+
 const client = new ApolloClient({
   uri: "http://localhost:8000/graphql",
   cache: new InMemoryCache({
@@ -97,7 +109,7 @@ const SQUARES_LIST_QUERY = gql`
 
 ReactDOM.render(
   <ApolloProvider client={client}>
-    <InfiniteScroll pageSize={5} query={SQUARES_LIST_QUERY}>
+    <InfiniteScroll pageSize={25} query={SQUARES_LIST_QUERY}>
       <SquaresList />
     </InfiniteScroll>
   </ApolloProvider>,
