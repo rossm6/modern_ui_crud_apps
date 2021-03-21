@@ -7,20 +7,6 @@ import SquaresList from "./SquaresList";
 // Importing the Bootstrap CSS
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-
-function default_squares() {
-  return {
-    pageInfo: {
-      hasPreviousPage: false,
-      hasNextPage: false,
-      startCursor: "",
-      endCursor: ""
-    },
-    edges: []
-  }
-}
-
-
 const client = new ApolloClient({
   uri: "http://localhost:8000/graphql",
   cache: new InMemoryCache({
@@ -48,6 +34,38 @@ const client = new ApolloClient({
               }
             },
           },
+          read(existing) {
+            if (!existing) return;
+            let edges = [];
+            let existingEdges = existing.edges.slice(0);
+            existingEdges.sort((a, b) => a.node.pk - b.node.pk); // CRUCIAL ORDERED BY ASC PK
+            if (existingEdges.length) {
+              if (+existingEdges[0].node.pk != 1) {
+                return; // nothing to show
+              }
+              edges.push(existingEdges[0])
+            }
+            // We don't have to worry which endCursor is found below
+            // because partial updates are not possible.  So
+            // end cursor must be a legitimate end cursor
+            // i.e. the last index of a page
+            // remember data set here being infinitely scrolled is a fixed data set
+            for (var i = 1; i < existingEdges.length; i++) {
+              if (+existingEdges[i].pk == +existingEdges[i + 1].pk) {
+                edges.push(existingEdges[i]);
+              }
+              else {
+                break;
+              }
+            }
+            let pageInfo = {
+              endCursor: edges[edges.length - 1].cursor
+            };
+            return {
+              edges,
+              pageInfo
+            }
+          }
         }
       }
     }

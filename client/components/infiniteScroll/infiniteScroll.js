@@ -25,6 +25,11 @@ const InfiniteScroll = ({ query, children, pageSize }) => {
     const [width, height] = useWindowSize();
     const { loading, data, fetchMore, error } = useQuery(query, { variables: { first: pageSize } });
 
+    // TODO -
+    // How to best handle network and server side errors?
+    // At least we want to display a "Something went wrong" message
+    // If there any problems.
+
     var containerRef = useRef(null);
 
     // fetchMore on scroll
