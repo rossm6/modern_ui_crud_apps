@@ -1,31 +1,43 @@
-import React, { useLayoutEffect, useRef } from "react";
+import React, { useLayoutEffect, useRef, useState } from "react";
 import { useQuery } from "@apollo/client";
 import debounce from "lodash.debounce";
-import { ref } from "yup";
+
+
+const useWindowSize = () => {
+    const [size, setSize] = useState([0, 0]);
+    useLayoutEffect(() => {
+        const updateSize = () => {
+            setSize([window.innerWidth, window.innerHeight]);
+        };
+        window.addEventListener('resize', updateSize);
+        updateSize();
+        return () => {
+            window.removeEventListener('resize', updateSize);
+        }
+    }, []);
+    return size;
+};
+
 
 const InfiniteScroll = ({ query, children, pageSize }) => {
     // Sources - 
     // for cloning  - https://stackoverflow.com/a/35102287
-
+    const [width, height] = useWindowSize();
     const { loading, data, fetchMore, error } = useQuery(query, { variables: { first: pageSize } });
 
     var containerRef = useRef(null);
 
     // fetchMore on scroll
     useLayoutEffect(() => {
-        console.log("DUH!!!");
         if (containerRef.current) {
-            console.log("oh yeah");
             const container = containerRef.current;
             const containerParent = container.parentElement;
-            console.log(containerParent);
             let func = debounce(() => {
                 console.log("bouncey, bouncey!");
                 const lastPageInfo = data?.viewer.squares.pageInfo;
                 if (loading || error || (lastPageInfo && !lastPageInfo.hasNextPage)) {
-                    console.log("bail", loading, error, lastPageInfo);
                     return // bail out like in prefill
-                };
+                }
                 if (containerParent.offsetHeight + containerParent.scrollTop >= containerParent.scrollHeight - 50) {
                     fetchMore({
                         variables: {

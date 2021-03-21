@@ -79,7 +79,7 @@ const SQUARES_LIST_QUERY = gql`
 
 ReactDOM.render(
   <ApolloProvider client={client}>
-    <InfiniteScroll pageSize={100} query={SQUARES_LIST_QUERY}>
+    <InfiniteScroll pageSize={5} query={SQUARES_LIST_QUERY}>
       <SquaresList />
     </InfiniteScroll>
   </ApolloProvider>,
