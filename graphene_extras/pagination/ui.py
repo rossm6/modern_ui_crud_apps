@@ -58,6 +58,11 @@ Need to manually test this new class out
 """
 
 
+class FormError(graphene.ObjectType):
+    field = graphene.String()
+    errors = graphene.List(graphene.String)
+
+
 class PaginationConnection(graphene.relay.Connection):
     """
     For each pagination button we want the cursor which is the last index of
@@ -71,6 +76,7 @@ class PaginationConnection(graphene.relay.Connection):
     pages = graphene.Field(PageCursors, pageSize=graphene.Int())
     # page_size will force a reload and put the user back to page 1
     total = graphene.Int()
+    form_errors = graphene.List(FormError)
 
     def get_page_number(self, index, page_size):
         return index // page_size + 1
@@ -127,7 +133,17 @@ class PaginationConnection(graphene.relay.Connection):
         page_size = kwargs.get('pageSize', 10)
         return self.get_pages(page_size, page_info.start_cursor, page_info.end_cursor, queryset)
 
-    def resolve_total(self, info):
+    def resolve_total(self, info, *args, **kwargs):
         page_info = self.page_info
         q = self.iterable
         return q.count()
+
+    def resolve_form_errors(self, info):
+        form_errors_dict = self.form_errors
+        # e.g. {"field": ["required"], "__all__": ["non field error"]}
+        form_errors = []
+        for field, errors in form_errors_dict.items():
+            form_errors.append(
+                FormError(field=field, errors=errors)
+            )
+        return form_errors

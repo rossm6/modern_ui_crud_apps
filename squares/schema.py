@@ -1,5 +1,7 @@
 import json
+from collections.abc import Iterable
 from datetime import date, timedelta
+from functools import partial
 
 import graphene
 from django.db.models import Case, CharField, F, Value, When
@@ -9,6 +11,8 @@ from django_filters import FilterSet, OrderingFilter
 from graphene_django import DjangoObjectType
 from graphene_django.filter import DjangoFilterConnectionField
 from graphene_extras.pagination.ui import PaginationConnection
+from graphql_relay import connection_from_list
+from graphene.relay.connection import PageInfo
 
 from squares.forms import ProductSearchForm
 from squares.models import Product, Square
@@ -40,7 +44,6 @@ query A ($formData: ProductNodeInput) {
 }
 """
 
-
 class ProductFilter(FilterSet):
     class Meta:
         model = Product
@@ -52,12 +55,10 @@ class ProductFilter(FilterSet):
         )
     )
 
-
 class ProductConnection(graphene.relay.Connection):
     class Meta:
         abstract = True
     id = graphene.GlobalID()
-
 
 
 class SquareFilter(FilterSet):
@@ -195,10 +196,37 @@ class ProductNodeInput(graphene.InputObjectType):
     listing = graphene.List(Listing)
 
 
+class ConnectionFieldWithErrors(graphene.relay.ConnectionField):
+
+    @classmethod
+    def resolve_connection(cls, connection_type, args, resolved):
+        if isinstance(resolved, connection_type):
+            return resolved
+
+        assert isinstance(resolved, Iterable), (
+            "Resolved value from the connection field have to be iterable or instance of {}. "
+            'Received "{}"'
+        ).format(connection_type, resolved)
+
+        queryset = resolved["queryset"]
+        form_errors = resolved["form_errors"]
+
+        connection = connection_from_list(
+            queryset,
+            args,
+            connection_type=connection_type,
+            edge_type=connection_type.Edge,
+            pageinfo_type=PageInfo,
+        )
+        connection.iterable = queryset
+        connection.form_errors = form_errors
+        return connection
+
+
 class ViewerNode(graphene.ObjectType):
     class Meta:
         interfaces = (graphene.relay.Node,)
-    products = graphene.relay.ConnectionField(
+    products = ConnectionFieldWithErrors(
         PaginateProductConnection,
         args={
             'orderBy': graphene.String(),
@@ -226,6 +254,8 @@ class ViewerNode(graphene.ObjectType):
         So the start_ui and end_ui fields are now obsolete in this query.
         I still include them for the sake of learning.
         """
+
+        form_errors = {}
 
         if formData := kwargs.get('formData'):
             form = ProductSearchForm(data=formData)
@@ -273,7 +303,8 @@ class ViewerNode(graphene.ObjectType):
                     "duration": [str(d[0]) for d in Product.durations],
                     "listing": [l[0] for l in Product.listings]
                 }
-                cleaned_data = {k: v for k, v in form.cleaned_data.items() if v}
+                cleaned_data = {k: v for k,
+                                v in form.cleaned_data.items() if v}
                 filters = {}
                 filters.update(default_search)
                 filters.update(cleaned_data)
@@ -297,9 +328,13 @@ class ViewerNode(graphene.ObjectType):
                     .filter(listing__in=filters["listing"])
                 )
             else:
+                form_errors = form.errors
                 q = q.none()
         q = order_queryset(q, **kwargs)
-        return q
+        return {
+            "queryset": q,
+            "form_errors": form_errors
+        }
 
 
 class Query(graphene.ObjectType):
