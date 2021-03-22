@@ -2,6 +2,8 @@ import React from "react";
 import ReactDOM from "react-dom";
 import InfiniteScroll from "./infiniteScroll";
 import { ApolloProvider, ApolloClient, InMemoryCache, gql } from "@apollo/client";
+import { onError } from "@apollo/client/link/error";
+
 import SquaresList from "./SquaresList";
 
 // Importing the Bootstrap CSS
@@ -43,6 +45,30 @@ const SQUARES_LIST_QUERY = gql`
   }
 `;
 
+
+const sortEdges = (edges, key, readField) => {
+  edges.sort((edge1, edge2) => {
+    const key1 = readField(key, edge1.node);
+    const key2 = readField(key, edge2.node);
+    return +key1 - +key2;
+  });
+};
+
+
+const errorLink = onError(({ graphQLErrors, networkError }) => {
+  if (graphQLErrors) {
+    graphQLErrors.map(({ message, locations, path }) => {
+      console.log(
+        `[GraphQL error]: Message ${message}, Location: ${locations}, Path: ${path}`
+      );
+    });
+    if (networkError) {
+      console.log(`[Network error]: ${networkError}`);
+    }
+  }
+});
+
+
 const client = new ApolloClient({
   uri: "http://localhost:8000/graphql",
   cache: new InMemoryCache({
@@ -74,14 +100,10 @@ const client = new ApolloClient({
               if (!existing) return;
               let edges = [];
               let existingEdges = existing.edges.slice(0);
-              existingEdges.sort((edge1, edge2) => {
-                const pk1 = readField("pk", edge1.node);
-                const pk2 = readField("pk", edge2.node);
-                return +pk1 - +pk2;
-              }); // CRUCIAL ORDERED BY ASC PK
+              sortEdges(existingEdges, "pk", readField);
               const firstNodePk = readField("pk", existingEdges[0].node);
               if (+firstNodePk != 1) {
-                return; // nothing to show
+                return;
               }
               edges.push(existingEdges[0])
               // We don't have to worry which endCursor is found below
@@ -90,7 +112,7 @@ const client = new ApolloClient({
               // i.e. the last index of a page
               // remember data set here being infinitely scrolled is a fixed data set
               for (var i = 1; i < existingEdges.length; i++) {
-                let node1 = existingEdges[i-1].node;
+                let node1 = existingEdges[i - 1].node;
                 let node2 = existingEdges[i].node;
                 let pk1 = readField('pk', node1);
                 let pk2 = readField('pk', node2);
@@ -101,19 +123,21 @@ const client = new ApolloClient({
                   break;
                 }
               }
+              let lastEdge = edges[edges.length - 1];
+              let lastPk = readField('pk', lastEdge.node);
               let pageInfo = {
-                endCursor: edges[edges.length - 1].cursor,
-                hasPreviousPage: false,
-                hasNextPage: true,
-                startCursor: "",
+                endCursor: edges[edges.length - 1].cursor, // relevant
+                hasPreviousPage: false, // irrelevant
+                hasNextPage: lastPk == 1000 ? false : true,
+                startCursor: "", // relevant
                 "__typename": "PageInfo"
               };
-              let oo = {
+              let squares = {
                 edges,
                 pageInfo
-              }
-              const edgesWithNodes = [];
-              oo.edges.forEach((edge) => {
+              };
+              let squareEdges = []; // this time edges have nodes, not just refs
+              squares.edges.forEach((edge) => {
                 const pk = readField('pk', edge.node);
                 const id = readField('id', edge.node);
                 const actualNode = {
@@ -126,11 +150,10 @@ const client = new ApolloClient({
                   cursor: edge.cursor,
                   node: actualNode
                 };
-                edgesWithNodes.push(newEdge);
+                squareEdges.push(newEdge);
               });
-              oo.edges = edgesWithNodes;
-              // we need to replace the node refs with the real fields p
-              return oo;
+              squares.edges = squareEdges;
+              return squares;
             }
           },
         }
