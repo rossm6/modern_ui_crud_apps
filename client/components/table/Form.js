@@ -1,13 +1,15 @@
 import React, { forwardRef } from 'react';
-import { Formik, Field } from 'formik';
+import { Formik, Field, useFormikContext } from 'formik';
 import * as Yup from 'yup';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 import Col from 'react-bootstrap/Col';
 import Row from 'react-bootstrap/Row';
+import Alert from "react-bootstrap/Alert";
 import PropTypes from 'prop-types';
 import DatePicker from "react-datepicker";
-import DropdownMultiselect from "react-multiselect-dropdown-bootstrap"; // may be better - https://github.com/harshzalavadiya/react-multi-select-component#readme
+// import DropdownMultiselect from "react-multiselect-dropdown-bootstrap"; // may be better - https://github.com/harshzalavadiya/react-multi-select-component#readme
+import DropdownMultiSelect from "../multipleSelectDropdown/index";
 import Slider from "./Slider";
 
 import "react-datepicker/dist/react-datepicker.css";
@@ -19,19 +21,35 @@ import "./style.css";
 
         Rightside Date Pickers go off the page on small screens.
 
-        Need to make changes to DropdownMultiSelect fork I took.
-            -   enhancement request: onBlur
-            -   bug: add "type"="button" to "SelectAll" button.
-            -   option to specify the prefix for IDs.  At the moment
-                multiple widgets will cause ID not unique error.
-
-        We could really do with improving the fields.  Take a
-        look at Select for example.  It seems lots of things aren't used
-        in the component.  I WAS CONFUSED ABOUT <Field>.  This is a
-        formik component which makes more sense.
-
 */
 
+
+const ErrorsList = (props) => {
+    return (
+        <Form.Row >
+            <Form.Group className="w-100">
+                {/* form.row and form.group gives it the same padding / width as form elements */}
+                <Alert variant="danger">
+                    <ul className="list-unstyled">
+                        {props.children}
+                    </ul>
+                </Alert>
+            </Form.Group>
+        </Form.Row>
+    )
+}
+
+const NonFieldErrors = ({ errors }) => {
+    if (errors) {
+        return (
+            <ErrorsList>
+                {errors.map((e, i) => (
+                    <li key={i}>{e}</li>
+                ))}
+            </ErrorsList>
+        )
+    }
+};
 
 const DateTimePickerRange = (props) => {
     const formik = props.formik;
@@ -44,7 +62,7 @@ const DateTimePickerRange = (props) => {
     // and blank is fine as well
 
     const CustomInput = forwardRef(({ value, onClick }, ref) => (
-        <Form.Control onClick={onClick} onChange={() => {}} ref={ref} value={value} />
+        <Form.Control onClick={onClick} onChange={() => { }} ref={ref} value={value} />
     ));
 
     CustomInput.propTypes = {
@@ -211,11 +229,12 @@ const SelectMultiple = (props) => {
         <Field name={props.name}>
             {
                 () => (
-                    <DropdownMultiselect
+                    <DropdownMultiSelect
                         selected={props.selected}
                         options={props.options}
-                        name="listing"
+                        name={props.name}
                         handleOnChange={(val) => props.formik.setFieldValue(props.name, val)}
+                        handleOnBlur={() => props.formik.setFieldTouched(props.name, true)}
                     />
                 )
             }
@@ -234,7 +253,17 @@ const formatDate = (date) => {
     return date.toLocaleDateString('en-GB')
 };
 
-const ProductSearchForm = ({ setSubmissionData }) => {
+const ProductSearchForm = ({ formErrors, setSubmissionData }) => {
+
+    console.log("form errors", formErrors);
+
+    const getNonFieldErrors = (formErrors) => {
+        if (!formErrors) return;
+        const e = formErrors.find(o => o.field == "__all__");
+        return e ? e.errors : null;
+    };
+
+    const nonFieldErrors = getNonFieldErrors(formErrors);
 
     return (
         <Formik
@@ -344,8 +373,8 @@ const ProductSearchForm = ({ setSubmissionData }) => {
                     )
                 })
             }
-            onSubmit={(values) => {
-                // we need to conver the date objects before making the API request
+            onSubmit={(values, actions) => {
+                // we need to convert the date objects before making the API request
                 let dates = {
                     fromStartDate: values.fromStartDate,
                     toStartDate: values.toStartDate,
@@ -365,14 +394,20 @@ const ProductSearchForm = ({ setSubmissionData }) => {
                         submissionValues[key] = values[key];
                     }
                 }
-                setSubmissionData(submissionValues);
+                actions.setSubmitting(false); // see ends the cycle began when onSubmit was called for formik
+                // see - https://formik.org/docs/guides/form-submission
+                // if we were hitting the server to validate the form we'd usually set this when the promise
+                // resolves but we're instead updating the state of the parent container
+                // and passing the formData along with the next fetchMore
+                setSubmissionData(submissionValues)
             }}
         >
             {formik => {
                 return (
-                    <Row>
+                    <Row noGutters={true}>
                         <Col>
                             <Form noValidate onSubmit={formik.handleSubmit} className="mt-5 border p-2 rounded">
+                                {nonFieldErrors ? <NonFieldErrors errors={nonFieldErrors} /> : null}
                                 <RangeInputs
                                     from_label="From Square"
                                     from_name="fromSquare"
@@ -437,7 +472,7 @@ const ProductSearchForm = ({ setSubmissionData }) => {
                                             ]}
                                             formik={formik}
                                         />
-                                        {formik.errors.duration && <div className='text-danger small mt-1'>{formik.errors.duration}</div>}
+                                        {formik.touched.duration && formik.errors.duration && <div className='text-danger small mt-1'>{formik.errors.duration}</div>}
                                     </Form.Group>
                                 </Form.Row>
                                 <Form.Row>
@@ -456,7 +491,9 @@ const ProductSearchForm = ({ setSubmissionData }) => {
 
                                                 {formik.values.listing && <div className='text-success small mt-1'>Looks good!</div>} 
                                             */}
-                                        {formik.errors.listing && <div className='text-danger small mt-1'>{formik.errors.listing}</div>}
+                                        {
+                                            formik.touched.listing && formik.errors.listing && <div className='text-danger small mt-1'>{formik.errors.listing}</div>
+                                        }
                                     </Form.Group>
                                 </Form.Row>
                                 <Button

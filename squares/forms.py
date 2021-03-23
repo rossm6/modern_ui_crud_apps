@@ -41,3 +41,7 @@ class ProductSearchForm(forms.Form):
         super().__init__(*args, **kwargs)
         for k, field in self.fields.items():
             field.required = False
+
+    # # for ui testing non field form errors
+    # def clean(self):
+    #     raise forms.ValidationError("some error!")

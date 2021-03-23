@@ -8,13 +8,13 @@ from django.db.models import Case, CharField, F, Value, When
 from django.db.models.functions import (Concat, ExtractDay, ExtractMonth,
                                         ExtractYear)
 from django_filters import FilterSet, OrderingFilter
+from graphene.relay.connection import PageInfo
 from graphene_django import DjangoObjectType
 from graphene_django.filter import DjangoFilterConnectionField
 from graphene_extras.pagination.ui import PaginationConnection
 from graphql_relay import connection_from_list
-from graphene.relay.connection import PageInfo
 
-from squares.forms import ProductSearchForm
+from squares.forms import ProductSearchForm, duration_choices
 from squares.models import Product, Square
 from squares.serializers import ProductSerializer
 
@@ -44,6 +44,7 @@ query A ($formData: ProductNodeInput) {
 }
 """
 
+
 class ProductFilter(FilterSet):
     class Meta:
         model = Product
@@ -54,6 +55,7 @@ class ProductFilter(FilterSet):
             ('square', 'start', 'duration', 'end', 'listing', 'price')
         )
     )
+
 
 class ProductConnection(graphene.relay.Connection):
     class Meta:
@@ -255,11 +257,6 @@ class ViewerNode(graphene.ObjectType):
         I still include them for the sake of learning.
         """
 
-        form_errors = {}
-
-        if formData := kwargs.get('formData'):
-            form = ProductSearchForm(data=formData)
-
         q = (
             Product
             .objects
@@ -288,6 +285,8 @@ class ViewerNode(graphene.ObjectType):
             .annotate(duration_ui=choices_display('duration', Product.durations))
         )
 
+        form_errors = {}
+
         if formData := kwargs.get('formData'):
             form = ProductSearchForm(data=formData)
             if form.is_valid():
@@ -300,7 +299,7 @@ class ViewerNode(graphene.ObjectType):
                     "to_start_date": date(2030, 1, 1),
                     "from_end_date": date(1900, 1, 1),
                     "to_end_date": date(2030, 1, 1),
-                    "duration": [str(d[0]) for d in Product.durations],
+                    "duration": [str(d[0]) for d in duration_choices],
                     "listing": [l[0] for l in Product.listings]
                 }
                 cleaned_data = {k: v for k,
@@ -308,12 +307,10 @@ class ViewerNode(graphene.ObjectType):
                 filters = {}
                 filters.update(default_search)
                 filters.update(cleaned_data)
-
                 duration = []
                 for d in filters["duration"]:
                     duration.append(timedelta(seconds=float(d)))
                 filters["duration"] = duration
-
                 q = (
                     q
                     .filter(square_id__gte=filters["from_square"])

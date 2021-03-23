@@ -31,7 +31,8 @@ const Table = ({
     usePagination,
     totalPages,
     totalCount,
-    form
+    form,
+    formErrors,
 }) => {
 
     const ordPrefRef = useRef(columns.length);
@@ -337,13 +338,13 @@ const Table = ({
     }
 
     let CustomForm;
-    if(form){
+    if (form) {
         CustomForm = form;
     }
 
     return (
         <div>
-            {CustomForm && <div>{<CustomForm setSubmissionData={applyFilters}/>}</div>}
+            {CustomForm && <div>{<CustomForm setSubmissionData={applyFilters} formErrors={formErrors}/>}</div>}
             {paginationInfo && <div className="my-3">
                 <Form.Control
                     className="w-auto"
@@ -387,13 +388,14 @@ const Table = ({
                             ))}
                         </tr>
                     ))}
+                    {totalPages ? null : <tr><td colSpan={columns.length}>Nothing found</td></tr>}
                 </tbody>
             </table>
-            <Row className="mt-3">
-                {totalCount && <Col>
+            <Row noGutters={true} className="mt-3">
+                {<Col>
                     <span>Showing {rows.length} of {totalCount}</span>
                 </Col>}
-                {usePagination && totalPages &&
+                {usePagination && totalPages ?
                     <Col>
                         <Pagination className="justify-content-center justify-content-md-end">
                             <Pagination.First
@@ -416,7 +418,10 @@ const Table = ({
                                 disabled={!canNextPage}
                             />
                         </Pagination>
-                    </Col>}
+                    </Col>
+                    :
+                    null
+                }
             </Row>
         </div>
     )

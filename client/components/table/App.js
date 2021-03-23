@@ -47,12 +47,24 @@ const LOAD_PRODUCTS = gql`
           }
         }
         total
+        formErrors {
+          field
+          errors
+        }
       }
     }
   }
 `;
 
 const Styles = styled.div`
+
+    div.table_wrapper {
+      min-height: 800px;
+      height: 800px;
+      max-height: 800px;
+      overflow-y: scroll;
+    }
+
     table {
         border: 1px solid #ccc;
         border-collapse: collapse;
@@ -60,6 +72,7 @@ const Styles = styled.div`
         padding: 0;
         width: 100%;
         table-layout: fixed;
+        min-height: 800px;
     }
 
     table caption {
@@ -179,7 +192,7 @@ const App = () => {
   };
 
   const getTotalPages = (queryData) => {
-    return queryData?.viewer.products.pages.last.pageNumber;
+    return queryData?.viewer.products.pages?.last.pageNumber || 0;
   };
 
   const _getData = ({ pageSize, pageIndex, orderBy, formData }) => {
@@ -272,31 +285,42 @@ const App = () => {
       
   */
 
-
   const getTotalCount = (queryData) => {
     return queryData?.viewer.products.total;
   };
 
+  const getFormErrors = (queryData) => {
+    console.log("form errors data", queryData);
+    return queryData?.viewer.products.formErrors;
+  };
+
+  const scrollTopRef = useRef({ scrollTop: 0 });
 
   return (
-    <Container>
-      <Styles>
-        <Table
-          loading={loading}
-          fetchData={getData.current}
-          data={getProducts(data)}
-          columns={columns}
-          orderBy={[
-            { "col": 0, "dir": "asc", order: 0 },
-            { "col": 5, "dir": "asc", order: 1 },
-          ]}
-          usePagination={true}
-          totalPages={getTotalPages(data)}
-          totalCount={getTotalCount(data)}
-          form={ProductSearchForm}
-        />
-      </Styles>
-    </Container>
+
+    <Styles>
+      <Container ref={scrollTopRef} onScroll={(e) => {
+        scrollTopRef.current.scrollTop = e.target.scrollTop;
+      }}>
+        <div className="table_wrapper p-2">
+          <Table
+            loading={loading}
+            fetchData={getData.current}
+            data={getProducts(data)}
+            columns={columns}
+            orderBy={[
+              { "col": 0, "dir": "asc", order: 0 },
+              { "col": 5, "dir": "asc", order: 1 },
+            ]}
+            usePagination={true}
+            totalPages={getTotalPages(data)}
+            totalCount={getTotalCount(data)}
+            form={ProductSearchForm}
+            formErrors={getFormErrors(data)}
+          />
+        </div>
+      </Container>
+    </Styles>
   )
 
 };
